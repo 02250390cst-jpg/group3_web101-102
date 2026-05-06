@@ -1,0 +1,87 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("CUSTOMER")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  restaurants  Restaurant[]
+  orders       Order[]
+}
+
+model Restaurant {
+  id          Int        @id @default(autoincrement())
+  ownerId     Int
+  name        String
+  location    String
+  description String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  owner       User       @relation(fields: [ownerId], references: [id])
+  menuItems   MenuItem[]
+  orders      Order[]
+
+  @@index([name])
+  @@index([location])
+}
+
+model MenuItem {
+  id           Int        @id @default(autoincrement())
+  restaurantId Int
+  name         String
+  description  String?
+  price        Decimal
+  isAvailable  Boolean    @default(true)
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id])
+  orderItems   OrderItem[]
+
+  @@index([restaurantId])
+}
+
+model Order {
+  id           Int         @id @default(autoincrement())
+  customerId   Int
+  restaurantId Int
+  status       String      @default("PENDING")
+  totalAmount  Decimal
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  customer     User        @relation(fields: [customerId], references: [id])
+  restaurant   Restaurant  @relation(fields: [restaurantId], references: [id])
+  items        OrderItem[]
+
+  @@index([customerId])
+  @@index([restaurantId])
+  @@index([status])
+}
+
+model OrderItem {
+  id         Int      @id @default(autoincrement())
+  orderId    Int
+  menuItemId Int
+  quantity   Int
+  unitPrice  Decimal
+  lineTotal  Decimal
+
+  order      Order    @relation(fields: [orderId], references: [id])
+  menuItem   MenuItem @relation(fields: [menuItemId], references: [id])
+
+  @@index([orderId])
+  @@index([menuItemId])
+}
