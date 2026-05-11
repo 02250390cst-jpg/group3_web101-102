@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
   FiLayout, FiShoppingBag, FiUsers, FiStar, 
@@ -11,10 +12,12 @@ import {
   MdLightbulbOutline,
   MdOutlineTableBar 
 } from 'react-icons/md';
+import { listRestaurants } from '../lib/api';
 
 export default function DashboardPage() {
   const router = useRouter();
   const [user, setUser] = useState(null);
+  const [restaurant, setRestaurant] = useState(null);
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
@@ -25,14 +28,28 @@ export default function DashboardPage() {
     }
 
     const storedUser = localStorage.getItem('vm_user');
+    let parsedUser = null;
     if (storedUser) {
       try {
-        setUser(JSON.parse(storedUser));
+        parsedUser = JSON.parse(storedUser);
+        setUser(parsedUser);
       } catch (error) {
         setUser(null);
       }
     }
 
+    async function fetchRestaurant() {
+      if (parsedUser?.restaurantId) {
+        try {
+          const restaurants = await listRestaurants();
+          const found = restaurants.find(r => String(r.id) === String(parsedUser.restaurantId));
+          setRestaurant(found || null);
+        } catch {
+          setRestaurant(null);
+        }
+      }
+    }
+    fetchRestaurant();
     setIsReady(true);
   }, [router]);
 
@@ -42,7 +59,6 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-      
       {/* SIDEBAR - Updated to match your brand */}
       <aside className="w-64 bg-white flex flex-col p-4 border-r border-gray-200">
         <div className="flex items-center gap-2 mb-8 px-2">
@@ -52,30 +68,33 @@ export default function DashboardPage() {
               <path d="M7 2v20M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
             </svg>
           </div>
-          <span className="font-bold text-lg tracking-tight">VirtualMenu</span>
+          <span className="font-bold text-lg tracking-tight">{restaurant?.name || user?.businessName || user?.cafeName || 'Your Cafe'}</span>
         </div>
 
         <nav className="flex-1 space-y-1">
           <NavItem icon={<FiLayout size={18}/>} label="Dashboard" active />
-          <NavItem icon={<MdOutlineRestaurantMenu size={18}/>} label="Menu Management" />
-          <NavItem icon={<FiShoppingBag size={18}/>} label="Orders" />
+          <NavItem icon={<MdOutlineRestaurantMenu size={18}/>} label="Menu Management" href="/menu_management" />
+          <NavItem icon={<FiShoppingBag size={18}/>} label="Orders" href="/o_orders" />
           <NavItem icon={<FiUsers size={18}/>} label="Customers" />
           <NavItem icon={<FiStar size={18}/>} label="Reviews" />
           <NavItem icon={<FiSettings size={18}/>} label="Setting" />
         </nav>
 
         {/* PROFILE SECTION */}
-        <div className="mt-auto pt-4 border-t border-gray-100">
-          <div className="bg-orange-50 p-3 rounded-2xl flex items-center gap-3 border border-orange-100">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-red-400 border-2 border-white flex items-center justify-center text-white font-bold text-xs">
-              {(user?.name || 'JD').slice(0, 2).toUpperCase()}
-            </div>
-            <div>
-              <p className="font-bold text-sm leading-tight text-gray-800">{user?.name || 'John Doe'}</p>
-              <p className="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">{user?.role || 'Owner'}</p>
-            </div>
-          </div>
-        </div>
+{/* PROFILE SECTION */}
+<div className="mt-auto pt-4 border-t border-gray-100">
+<Link href="/profile">
+  <div className="bg-orange-50 p-3 rounded-2xl flex items-center gap-3 border border-orange-100 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer">
+    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-red-400 border-2 border-white flex items-center justify-center text-white font-bold text-xs">
+      {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'OW'}
+    </div>
+    <div>
+      <p className="font-bold text-sm leading-tight text-gray-800">{user?.name || 'Owner'}</p>
+      <p className="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">Owner</p>
+    </div>
+  </div>
+</Link>
+</div>
       </aside>
 
       {/* MAIN CONTENT */}
@@ -84,10 +103,15 @@ export default function DashboardPage() {
         {/* HEADER */}
         <header className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Welcome back, D'Cafe!</h1>
-            <p className="text-gray-500 text-sm">Here's what's happening with your store today.</p>
+            <h1 className="text-2xl font-bold text-gray-900">
+              Welcome back, {restaurant?.name || user?.businessName || user?.cafeName || "Your Cafe"}!
+            </h1>
+            <p className="text-gray-500 text-sm">Here's what's happening with your hotel/cafe today.</p>
           </div>
-          <button className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100">
+          <button
+            className="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 transition-all shadow-lg shadow-orange-100"
+            onClick={() => router.push('/menu_management')}
+          >
             <FiPlus /> Add New Item
           </button>
         </header>
@@ -187,13 +211,15 @@ export default function DashboardPage() {
 }
 
 // Sidebar Navigation Item Component
-function NavItem({ icon, label, active = false }) {
-  return (
+function NavItem({ icon, label, active = false, href }) {
+  const content = (
     <div className={`flex items-center gap-3 p-3.5 rounded-2xl cursor-pointer transition-all duration-300 ${active ? 'bg-orange-500 text-white shadow-lg shadow-orange-200' : 'text-gray-500 hover:bg-orange-50 hover:text-orange-600'}`}>
       <span className={active ? "text-white" : "text-gray-400"}>{icon}</span>
       <span className="font-bold text-[13px]">{label}</span>
     </div>
   );
+
+  return href ? <Link href={href}>{content}</Link> : content;
 }
 
 // Stats Card Component

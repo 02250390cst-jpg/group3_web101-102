@@ -70,7 +70,7 @@ export default function Register() {
       if (response?.user) {
         localStorage.setItem('vm_user', JSON.stringify(response.user));
       }
-      router.push('/dashboard');
+      router.push('/dashboard2');
     } catch (submitError) {
       setError(submitError?.message || 'Unable to create account.');
     } finally {

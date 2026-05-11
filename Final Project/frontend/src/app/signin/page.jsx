@@ -37,7 +37,7 @@ export default function Login() {
         localStorage.setItem('vm_user', JSON.stringify(response.user));
       }
 
-      router.push('/dashboard');
+      router.push('/dashboard2');
     } catch (submitError) {
       setError(submitError?.message || 'Unable to sign in.');
     } finally {

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation"; // Add this import
 import { useState } from "react";
+import { register } from "../../lib/api";
 import { FaStore, FaUser, FaEnvelope, FaPhone, FaMapMarkerAlt, FaAlignLeft, FaLock, FaEye, FaEyeSlash, FaUtensils, FaShoppingBag, FaChartLine } from "react-icons/fa";
 
 export default function RegisterPage() {
@@ -10,6 +11,8 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [agreed, setAgreed] = useState(false);
+  const [error, setError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     businessName: "",
     fullName: "",
@@ -25,8 +28,9 @@ export default function RegisterPage() {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
     if (!agreed) {
       alert("Please agree to the Terms of Service");
       return;
@@ -35,10 +39,40 @@ export default function RegisterPage() {
       alert("Passwords do not match!");
       return;
     }
-    console.log("Registration submitted:", formData);
-    
-    // After successful registration, redirect to dashboard
-    router.push("/dashboard");
+
+    setIsSubmitting(true);
+    try {
+      const response = await register({
+        name: formData.fullName,
+        email: formData.email.trim(),
+        password: formData.password,
+        role: "OWNER",
+        businessName: formData.businessName,
+        location: formData.location,
+        description: formData.description
+      });
+
+      if (response?.token) {
+        localStorage.setItem("vm_token", response.token);
+      }
+
+      if (response?.user) {
+        localStorage.setItem(
+          "vm_user", 
+          JSON.stringify({
+            ...response.user,
+            location: response.user.location || formData.location.trim(),
+          }),
+        );
+      }
+
+      // After successful registration, redirect to dashboard
+      router.push("/dashboard");
+    } catch (submitError) {
+      setError(submitError?.message || "Unable to register.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -266,11 +300,18 @@ export default function RegisterPage() {
                 </span>
               </label>
 
+              {error && (
+                <div className="rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-600">
+                  {error}
+                </div>
+              )}
+
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className="w-full bg-gradient-to-r from-orange-500 to-red-500 text-white py-3 rounded-lg font-semibold hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
               >
-                Create Business Account →
+                {isSubmitting ? "Creating Account..." : "Create Business Account →"}
               </button>
             </form>
 

@@ -19,6 +19,9 @@ router.post(
     body('email').isEmail().withMessage('Valid email is required'),
     body('password').isLength({ min: 6 }).withMessage('Password min 6 chars'),
     body('role').optional().isIn(['OWNER', 'CUSTOMER']).withMessage('Invalid role'),
+    body('businessName').optional().trim(),
+    body('location').optional().trim(),
+    body('description').optional().isString(),
   ],
   validate,
   register

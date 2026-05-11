@@ -10,14 +10,17 @@ datasource db {
 model User {
   id           Int       @id @default(autoincrement())
   name         String
-  email        String    @unique
+  email        String
   passwordHash String
   role         String    @default("CUSTOMER")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
+  profileImage String?   @db.LongText
 
   restaurants  Restaurant[]
   orders       Order[]
+
+  @@unique([email, role])
 }
 
 model Restaurant {
@@ -44,6 +47,7 @@ model MenuItem {
   description  String?
   price        Decimal
   isAvailable  Boolean    @default(true)
+  image        String?    @db.LongText // Optional image URL or base64
   createdAt    DateTime   @default(now())
   updatedAt    DateTime   @updatedAt
 

@@ -15,10 +15,20 @@ const signToken = (user) => {
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role } = req.body;
+    const { name, email, password, role, businessName, location, description } = req.body;
+    const normalizedRole = role || 'CUSTOMER';
 
-    const existingUser = await prisma.user.findUnique({
-      where: { email },
+    if (normalizedRole === 'OWNER') {
+      if (!businessName || !location) {
+        return res.status(422).json({ message: 'Business name and location are required for owners' });
+      }
+    }
+
+    const existingUser = await prisma.user.findFirst({
+      where: {
+        email,
+        role: normalizedRole,
+      },
     });
 
     if (existingUser) {
@@ -32,9 +42,21 @@ const register = async (req, res, next) => {
         name,
         email,
         passwordHash,
-        role: role || 'CUSTOMER',
+        role: normalizedRole,
       },
     });
+
+    let restaurant = null;
+    if (normalizedRole === 'OWNER') {
+      restaurant = await prisma.restaurant.create({
+        data: {
+          name: businessName,
+          location,
+          description: description || null,
+          ownerId: user.id,
+        },
+      });
+    }
 
     const token = signToken(user);
 
@@ -45,6 +67,9 @@ const register = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        businessName: restaurant?.name || null,
+        location: restaurant?.location || null,
+        restaurantId: restaurant?.id || null,
       },
     });
   } catch (error) {
@@ -54,11 +79,30 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
-    const user = await prisma.user.findUnique({
-      where: { email },
-    });
+    let user = null;
+    if (role) {
+      user = await prisma.user.findFirst({
+        where: {
+          email,
+          role,
+        },
+      });
+    } else {
+      const users = await prisma.user.findMany({
+        where: { email },
+        orderBy: { createdAt: 'desc' },
+      });
+
+      if (users.length === 1) {
+        user = users[0];
+      } else if (users.length > 1) {
+        return res.status(409).json({
+          message: 'Multiple accounts exist for this email. Please specify role.',
+        });
+      }
+    }
 
     if (!user) {
       return res.status(401).json({ message: 'Invalid credentials' });
@@ -70,6 +114,14 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    let restaurant = null;
+    if (user.role === 'OWNER') {
+      restaurant = await prisma.restaurant.findFirst({
+        where: { ownerId: user.id },
+        orderBy: { createdAt: 'desc' },
+      });
+    }
+
     const token = signToken(user);
 
     return res.json({
@@ -79,6 +131,9 @@ const login = async (req, res, next) => {
         name: user.name,
         email: user.email,
         role: user.role,
+        businessName: restaurant?.name || null,
+        location: restaurant?.location || null,
+        restaurantId: restaurant?.id || null,
       },
     });
   } catch (error) {

@@ -62,3 +62,43 @@ export const register = (payload) =>
     method: "POST",
     body: payload,
   });
+
+export const listMenuItems = ({ restaurantId, token }) =>
+  apiRequest(`/api/restaurants/${restaurantId}/menu`, {
+    token,
+  });
+
+export const createMenuItem = ({ restaurantId, token, payload }) =>
+  apiRequest(`/api/restaurants/${restaurantId}/menu`, {
+    method: "POST",
+    token,
+    body: payload,
+  });
+
+export const updateMenuItem = ({ restaurantId, itemId, token, payload }) =>
+  apiRequest(`/api/restaurants/${restaurantId}/menu/${itemId}`, {
+    method: "PATCH",
+    token,
+    body: payload,
+  });
+
+export const deleteMenuItem = ({ restaurantId, itemId, token }) =>
+  apiRequest(`/api/restaurants/${restaurantId}/menu/${itemId}`, {
+    method: "DELETE",
+    token,
+  });
+
+  export const listRestaurants = ({ q, location} = {}) => {
+    const params = new URLSearchParams();
+
+    if (q) {
+      params.set("q", q);
+    }
+
+    if (location) {
+      params.set("location", location);
+    }
+
+    const queryString = params.toString();
+    return apiRequest(`/api/restaurants${queryString ? `?${queryString}` : ""}`);
+  }

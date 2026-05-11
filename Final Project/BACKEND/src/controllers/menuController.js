@@ -3,7 +3,7 @@ const prisma = require('../config/prisma');
 const createMenuItem = async (req, res, next) => {
   try {
     const restaurantId = Number(req.params.restaurantId);
-    const { name, description, price, isAvailable } = req.body;
+    const { name, description, price, isAvailable, image } = req.body;
 
     const restaurant = await prisma.restaurant.findFirst({
       where: { id: restaurantId, ownerId: req.user.id },
@@ -20,6 +20,7 @@ const createMenuItem = async (req, res, next) => {
         price,
         isAvailable: isAvailable !== undefined ? isAvailable : true,
         restaurantId,
+        image: image || null,
       },
     });
 
@@ -53,7 +54,7 @@ const listMenuItems = async (req, res, next) => {
 const updateMenuItem = async (req, res, next) => {
   try {
     const itemId = Number(req.params.itemId);
-    const { name, description, price, isAvailable } = req.body;
+    const { name, description, price, isAvailable, image } = req.body;
 
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId },
@@ -71,6 +72,7 @@ const updateMenuItem = async (req, res, next) => {
         description: description ?? item.description,
         price: price ?? item.price,
         isAvailable: isAvailable ?? item.isAvailable,
+        image: image !== undefined ? image : item.image,
       },
     });
 

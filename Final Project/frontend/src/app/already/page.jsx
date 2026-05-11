@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { FaEnvelope, FaLock, FaEye, FaEyeSlash } from "react-icons/fa";
 import { login } from '../../lib/api';
 
@@ -13,8 +13,26 @@ export default function SignInPage() {
     email: "",
     password: ""
   });
+  const [savedUser, setSavedUser] = useState(null);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem('vm_user');
+    if (!storedUser) {
+      return;
+    }
+
+    try {
+      const parsedUser = JSON.parse(storedUser);
+      setSavedUser(parsedUser);
+      if (parsedUser?.email) {
+        setFormData((current) => ({ ...current, email: parsedUser.email }));
+      }
+    } catch (parseError) {
+      setSavedUser(null);
+    }
+  }, []);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -75,6 +93,11 @@ export default function SignInPage() {
             </Link>
             <h2 className="text-3xl font-bold text-gray-900">Welcome Back</h2>
             <p className="text-gray-500 text-sm mt-2">Sign in to your account</p>
+            {savedUser?.businessName && (
+              <p className="text-[11px] text-gray-500 mt-2">
+                {savedUser.businessName}{savedUser?.name ? ` · ${savedUser.name}` : ""}
+              </p>
+            )}
           </div>
         </div>
 
