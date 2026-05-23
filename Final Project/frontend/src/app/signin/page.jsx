@@ -117,6 +117,19 @@ export default function Login() {
                 </div>
               )}
 
+              <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  className="w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-400"
+                />
+                <span className="text-sm text-gray-600">Remember me</span>
+              </label>
+              <a href="/forgot-password" className="text-sm text-blue-500 hover:underline">
+                Forgot password?
+              </a>
+            </div>
+
               <button
                 type="submit"
                 disabled={isSubmitting}

@@ -1,9 +1,29 @@
 const express = require('express');
 const { body, validationResult } = require('express-validator');
 const { register, login } = require('../controllers/authController');
+const { getTodayStats, getWeeklyRevenue, getRecentOrders } = require('../controllers/dashboardController');
+const jwt = require('jsonwebtoken');
 
 const router = express.Router();
 
+// ── Auth middleware ──────────────────────────────────────────────────────────
+// JWT is signed with { sub: user.id, role: user.role }
+const protect = (req, res, next) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ error: 'No token provided' });
+  }
+  const token = authHeader.split(' ')[1];
+  try {
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { id: decoded.sub, role: decoded.role }; // sub = user.id
+    next();
+  } catch (err) {
+    return res.status(401).json({ error: 'Invalid or expired token' });
+  }
+};
+
+// ── Validation helper ────────────────────────────────────────────────────────
 const validate = (req, res, next) => {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -12,6 +32,7 @@ const validate = (req, res, next) => {
   return next();
 };
 
+// ── Auth routes ──────────────────────────────────────────────────────────────
 router.post(
   '/register',
   [
@@ -36,5 +57,10 @@ router.post(
   validate,
   login
 );
+
+// ── Dashboard routes ─────────────────────────────────────────────────────────
+router.get('/dashboard/stats', protect, getTodayStats);
+router.get('/dashboard/weekly-revenue', protect, getWeeklyRevenue);
+router.get('/dashboard/recent-orders', protect, getRecentOrders);
 
 module.exports = router;

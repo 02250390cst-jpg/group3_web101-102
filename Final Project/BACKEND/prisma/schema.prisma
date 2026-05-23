@@ -12,6 +12,7 @@ model User {
   name         String
   email        String
   passwordHash String
+  phone        String?
   role         String    @default("CUSTOMER")
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -29,6 +30,7 @@ model Restaurant {
   name        String
   location    String
   description String?
+  profileImage String?   @db.LongText
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
 
@@ -56,6 +58,17 @@ model MenuItem {
 
   @@index([restaurantId])
 }
+
+  model DailyRevenue {
+    id            Int        @id @default(autoincrement())
+    restaurantId  Int
+    date          DateTime   // Store only the date part (set time to 00:00:00)
+    revenue       Decimal    @default(0)
+    restaurant    Restaurant @relation(fields: [restaurantId], references: [id])
+
+    @@unique([restaurantId, date])
+    @@index([restaurantId, date])
+  }
 
 model Order {
   id           Int         @id @default(autoincrement())

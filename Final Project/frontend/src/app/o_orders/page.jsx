@@ -1,19 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { FiArrowLeft, FiFilter, FiSearch, FiCheckCircle, FiClock, FiTruck } from "react-icons/fi";
+import { FiArrowLeft, FiFilter, FiSearch, FiCheckCircle, FiClock, FiTruck, FiShoppingBag } from "react-icons/fi";
 import { MdOutlineTableBar } from "react-icons/md";
 
 export default function OwnerOrdersPage() {
-  const [filter, setFilter] = useState("All");
 
-  const orders = [
-    { id: "#ORD03", customer: "Karma Wangchuk", items: "2x Margherita Pizza, 1x Coke", total: "Nu. 650", time: "10:40 AM", status: "New", type: "Delivery" },
-    { id: "#ORD02", customer: "Kencho Dorji", items: "1x Classic Veg Burger", total: "Nu. 200", time: "09:56 AM", status: "Preparing", type: "Dine-in" },
-    { id: "#ORD01", customer: "Dechen Yangzom", items: "4x Chocolate Croissant, 2x Latte", total: "Nu. 950", time: "09:20 AM", status: "Completed", type: "Delivery" },
-    { id: "#ORD04", customer: "Pema Loday", items: "1x Chicken Tikka Pizza", total: "Nu. 480", time: "11:15 AM", status: "New", type: "Pickup" },
-  ];
+  const [filter, setFilter] = useState("All");
+  const [orders, setOrders] = useState([]);
+  const [restaurantId, setRestaurantId] = useState(null);
+
+  useEffect(() => {
+    // Load orders from localStorage
+    const stored = JSON.parse(localStorage.getItem("orders")) || [];
+    setOrders(stored);
+    // Get current owner's restaurantId
+    try {
+      const user = JSON.parse(localStorage.getItem("vm_user"));
+      setRestaurantId(user?.restaurantId ?? null);
+    } catch {
+      setRestaurantId(null);
+    }
+  }, []);
 
   const statusColors = {
     New: "bg-orange-100 text-orange-600 border-orange-200",
@@ -21,7 +30,9 @@ export default function OwnerOrdersPage() {
     Completed: "bg-green-100 text-green-600 border-green-200",
   };
 
-  const filteredOrders = filter === "All" ? orders : orders.filter(o => o.status === filter);
+  // Only show orders for this restaurant
+  const ownerOrders = restaurantId ? orders.filter(o => o.restaurantId === restaurantId) : orders;
+  const filteredOrders = filter === "All" ? ownerOrders : ownerOrders.filter(o => o.status === filter);
 
   return (
     <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8">
@@ -107,7 +118,7 @@ export default function OwnerOrdersPage() {
                       </span>
                     </td>
                     <td className="px-6 py-6">
-                      <span className="font-black text-gray-900">{order.total}</span>
+                      <span className="font-black text-gray-900">Nu. {order.total}</span>
                     </td>
                     <td className="px-6 py-6">
                       <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase border ${statusColors[order.status]}`}>
@@ -115,9 +126,31 @@ export default function OwnerOrdersPage() {
                       </span>
                     </td>
                     <td className="px-8 py-6 text-right">
-                      <button className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg">
-                        Manage
-                      </button>
+                      <div className="relative group inline-block">
+                        <button className="text-xs font-bold bg-slate-900 text-white px-4 py-2 rounded-lg hover:bg-orange-600 transition-all opacity-0 group-hover:opacity-100 shadow-lg">
+                          Manage
+                        </button>
+                        <div className="absolute right-0 mt-2 w-36 bg-white border border-gray-200 rounded-xl shadow-lg z-20 hidden group-hover:block">
+                          {["New", "Preparing", "Completed"].map((status) => (
+                            <button
+                              key={status}
+                              className={`block w-full text-left px-4 py-2 text-sm font-semibold rounded-xl hover:bg-orange-50 ${order.status === status ? "text-orange-600" : "text-gray-700"}`}
+                              onClick={() => {
+                                // Update order status in localStorage
+                                const allOrders = JSON.parse(localStorage.getItem("orders")) || [];
+                                const updatedOrders = allOrders.map(o =>
+                                   o.id === order.id ? { ...o, status, date: new Date().toISOString().slice(0, 10) } : o
+                                );
+                                localStorage.setItem("orders", JSON.stringify(updatedOrders));
+                                setOrders(updatedOrders);
+                              }}
+                              disabled={order.status === status}
+                            >
+                              {status}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </td>
                   </tr>
                 ))}
