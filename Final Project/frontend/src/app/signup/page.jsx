@@ -209,7 +209,7 @@ export default function Register() {
                 id="terms"
               />
               <label htmlFor="terms" className="text-[10px] text-gray-500 font-bold">
-                I agree to the <span className="text-blue-600 cursor-pointer hover:underline">Terms of Service</span> and <span className="text-blue-600 cursor-pointer hover:underline">Privacy Policy</span>
+                I agree to the <Link href="/terms-signup" className="text-blue-600 cursor-pointer hover:underline">Terms of Service</Link> and <Link href="/privacy-policy-signup" className="text-blue-600 cursor-pointer hover:underline">Privacy Policy</Link>
               </label>
             </div>
 

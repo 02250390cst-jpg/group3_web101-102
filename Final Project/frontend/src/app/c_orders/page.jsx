@@ -23,6 +23,7 @@ import {
 } from "react-icons/fa";
 
 export default function CustomerOrders() {
+    const router = require("next/navigation").useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
   const [quantity, setQuantity] = useState({
@@ -33,52 +34,29 @@ export default function CustomerOrders() {
 
   const userName = "Khamsum";
 
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Pizza",
-      restaurant: "The HOPE Cafe and BAR",
-      location: "Thimphu",
-      rating: 4.8,
-      price: 450,
-      image: "",
-    },
-    {
-      id: 2,
-      name: "Vietnamese summer rolls",
-      restaurant: "Your Café",
-      location: "Paro",
-      rating: 4.5,
-      price: 320,
-      image: "",
-    },
-    {
-      id: 3,
-      name: "Non-Veg Burger",
-      restaurant: "Kizom Cafe Pizzeria & Bakery",
-      location: "Phuntsholing",
-      rating: 4.4,
-      price: 310,
-      image: "",
-    },
-  ]);
+  const [cartItems, setCartItems] = useState([]);
+  // Get current restaurantId from localStorage (from last menu visit)
+  const [restaurantId, setRestaurantId] = useState(null);
+  React.useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("vm_user"));
+    setRestaurantId(user?.restaurantId ?? null);
+  }, []);
 
-  const recommendedItems = [
-    {
-      id: 5,
-      name: "Flan dessert",
-      restaurant: "Kizom Cafe Pizzeria & Bakery",
-      price: 120,
-      image: "",
-    },
-    {
-      id: 6,
-      name: "Sushi rolls",
-      restaurant: "D' Cafe",
-      price: 120,
-      image: "",
-    },
-  ];
+  // Load cart from localStorage on mount
+  React.useEffect(() => {
+    const cart = JSON.parse(localStorage.getItem("cart")) || [];
+    setCartItems(cart);
+  }, []);
+
+  // Get random recommendations from last restaurant menu
+  const [recommendedItems, setRecommendedItems] = useState([]);
+  React.useEffect(() => {
+    const menu = JSON.parse(localStorage.getItem("lastMenuItems")) || [];
+    // Pick up to 2 random items (not in cart)
+    const notInCart = menu.filter((item) => !cartItems.some((c) => c.id === item.id));
+    const shuffled = notInCart.sort(() => 0.5 - Math.random());
+    setRecommendedItems(shuffled.slice(0, 2));
+  }, [cartItems]);
 
   const menuItems = [
     { name: "Home", icon: FaHome, active: false, href: "/dashboard2" },
@@ -99,7 +77,9 @@ export default function CustomerOrders() {
   };
 
   const removeItem = (id) => {
-    setCartItems(cartItems.filter((item) => item.id !== id));
+    const updatedCart = cartItems.filter((item) => item.id !== id);
+    setCartItems(updatedCart);
+    localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
 
   const itemTotal = cartItems.reduce((total, item) => {
@@ -293,7 +273,10 @@ export default function CustomerOrders() {
               </div>
 
               {/* Add More Items */}
-              <button className="w-full py-3 rounded-xl border-2 border-dashed border-amber-300 text-amber-600 font-semibold text-base hover:bg-amber-50 transition-colors">
+              <button
+                className="w-full py-3 rounded-xl border-2 border-dashed border-amber-300 text-amber-600 font-semibold text-base hover:bg-amber-50 transition-colors"
+                onClick={() => router.push("/dashboard2")}
+              >
                 + Add more items
               </button>
 
@@ -374,13 +357,50 @@ export default function CustomerOrders() {
                   <span className="text-sm font-semibold">Ready in 20-30min</span>
                 </div>
 
-                <button className="w-full mt-5 bg-gradient-to-r from-amber-600 to-orange-500 text-white py-3 rounded-xl font-bold text-base shadow-md hover:bg-gradient-to-r hover:from-amber-700 hover:to-orange-600 transition-all">
+
+                <button
+                  className="w-full mt-5 bg-gradient-to-r from-amber-600 to-orange-500 text-white py-3 rounded-xl font-bold text-base shadow-md hover:bg-gradient-to-r hover:from-amber-700 hover:to-orange-600 transition-all"
+                  onClick={() => {
+                    if (cartItems.length === 0) return;
+                    // Get existing orders or empty array
+                    const orders = JSON.parse(localStorage.getItem("orders")) || [];
+                    // Get username and restaurantId from localStorage
+                    let username = "You";
+                    let restId = restaurantId;
+                    try {
+                      const user = JSON.parse(localStorage.getItem("vm_user"));
+                      if (user && user.name) username = user.name;
+                      if (user && user.restaurantId) restId = user.restaurantId;
+                    } catch {}
+                    // If no restaurantId, try to get from first cart item
+                    if (!restId && cartItems.length > 0 && cartItems[0].restaurantId) {
+                      restId = cartItems[0].restaurantId;
+                    }
+                    const newOrder = {
+  id: `#ORD${String(orders.length + 1).padStart(2, "0")}`,
+  customer: username,
+  items: cartItems.map(i => `${i.quantity || 1}x ${i.name}`).join(", "),
+  total: cartItems.reduce((sum, i) => sum + (i.price * (i.quantity || 1)), 0),
+  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  date: new Date().toISOString().slice(0, 10),
+  status: "New",
+  type: "Delivery",
+  restaurantId: restId
+};
+                    // Save new order
+                    localStorage.setItem("orders", JSON.stringify([newOrder, ...orders]));
+                    // Clear cart
+                    setCartItems([]);
+                    localStorage.setItem("cart", JSON.stringify([]));
+                    alert("Order placed!");
+                  }}
+                >
                   Place Order
                 </button>
 
                 <p className="text-xs text-gray-400 text-center mt-4">
                   By placing this order, you agree to our{" "}
-                  <Link href="#" className="text-amber-600">Terms</Link> &{" "}
+                  <Link href="/terms" className="text-amber-600">Terms</Link> &{" "}
                   <Link href="#" className="text-amber-600">Privacy</Link>
                 </p>
               </div>

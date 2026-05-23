@@ -145,7 +145,7 @@ export default function SignInPage() {
                 />
                 <span className="text-sm text-gray-600">Remember me</span>
               </label>
-              <a href="#" className="text-sm text-orange-500 hover:underline">
+              <a href="/forgot-password" className="text-sm text-orange-500 hover:underline">
                 Forgot password?
               </a>
             </div>

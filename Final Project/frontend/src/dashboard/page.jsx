@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { 
@@ -13,8 +13,111 @@ import {
   MdOutlineTableBar 
 } from 'react-icons/md';
 import { listRestaurants } from '../lib/api';
+import { fetchCurrentUser } from '../lib/user';
 
 export default function DashboardPage() {
+  const [totalRevenue, setTotalRevenue] = useState(0);
+  const [totalOrders, setTotalOrders] = useState(0);
+  const [recentOrders, setRecentOrders] = useState([]);
+  const [weeklyData, setWeeklyData] = useState({ days: [], dailyRevenue: [], points: '', weekTotal: 0 });
+
+  // ── Single function that updates ALL state from localStorage ────────────────
+  const updateAll = useCallback(() => {
+    const orders = JSON.parse(localStorage.getItem("orders")) || [];
+    let restId = null;
+    try {
+      const user = JSON.parse(localStorage.getItem("vm_user"));
+      restId = user?.restaurantId ?? null;
+    } catch {}
+    const myOrders = restId ? orders.filter(o => o.restaurantId === restId) : orders;
+
+    // ── Today's stats ────────────────────────────────────────────────────────
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const todayOrders = myOrders.filter(o => {
+      const orderDate = o.date || o.createdAt || "";
+      return orderDate.slice(0, 10) === todayStr;
+    });
+    setTotalOrders(todayOrders.length);
+    const revenue = todayOrders.reduce((sum, order) => {
+      if (order.status === "Completed") {
+        let val = 0;
+        if (typeof order.total === "number") val = order.total;
+        else if (typeof order.total === "string") {
+          const num = Number(order.total);
+          if (!isNaN(num)) val = num;
+        }
+        return sum + val;
+      }
+      return sum;
+    }, 0);
+    setTotalRevenue(revenue);
+
+    // ── Recent orders ────────────────────────────────────────────────────────
+    setRecentOrders(myOrders.slice(0, 3));
+
+    // ── Weekly graph data ────────────────────────────────────────────────────
+    // i=0 → 6 days ago, i=6 → today
+    const days = Array.from({ length: 7 }, (_, i) => {
+      const d = new Date();
+      d.setDate(d.getDate() - (6 - i));
+      return d;
+    });
+    const dailyRevenue = days.map(day => {
+      const dayStr = day.toISOString().slice(0, 10);
+      return myOrders.reduce((sum, order) => {
+        if (order.status === "Completed") {
+          const orderDate = (order.date || order.createdAt || "").slice(0, 10);
+          if (orderDate === dayStr) {
+            let val = 0;
+            if (typeof order.total === "number") val = order.total;
+            else if (typeof order.total === "string") {
+              const num = Number(order.total);
+              if (!isNaN(num)) val = num;
+            }
+            return sum + val;
+          }
+        }
+        return sum;
+      }, 0);
+    });
+    const maxY = Math.max(...dailyRevenue, 1);
+    const points = dailyRevenue.map((rev, i) => {
+      const x = (i / 6) * 100;
+      const y = 35 - (rev / maxY) * 30;
+      return `${x},${y}`;
+    }).join(' ');
+    const weekTotal = dailyRevenue.reduce((a, b) => a + b, 0);
+    setWeeklyData({ days, dailyRevenue, points, weekTotal });
+  }, []);
+
+  // ── On mount: run once, then every 5 seconds, then reset at midnight ────────
+  useEffect(() => {
+    updateAll();
+    window.addEventListener("storage", updateAll);
+
+    // Live polling every 5 seconds — updates everything including graph
+    const liveInterval = setInterval(updateAll, 5000);
+
+    // Midnight reset
+    const now = new Date();
+    const midnight = new Date();
+    midnight.setHours(24, 0, 0, 0);
+    const msUntilMidnight = midnight - now;
+
+    let dailyInterval = null;
+    const midnightTimeout = setTimeout(() => {
+      updateAll();
+      dailyInterval = setInterval(updateAll, 24 * 60 * 60 * 1000);
+    }, msUntilMidnight);
+
+    return () => {
+      window.removeEventListener("storage", updateAll);
+      clearInterval(liveInterval);
+      clearTimeout(midnightTimeout);
+      if (dailyInterval) clearInterval(dailyInterval);
+    };
+  }, [updateAll]);
+
   const router = useRouter();
   const [user, setUser] = useState(null);
   const [restaurant, setRestaurant] = useState(null);
@@ -26,40 +129,36 @@ export default function DashboardPage() {
       router.replace('/signin');
       return;
     }
-
-    const storedUser = localStorage.getItem('vm_user');
-    let parsedUser = null;
-    if (storedUser) {
+    async function fetchUserAndRestaurant() {
       try {
-        parsedUser = JSON.parse(storedUser);
-        setUser(parsedUser);
-      } catch (error) {
-        setUser(null);
-      }
-    }
-
-    async function fetchRestaurant() {
-      if (parsedUser?.restaurantId) {
-        try {
+        const userData = await fetchCurrentUser(token);
+        setUser(userData);
+        localStorage.setItem('vm_user', JSON.stringify(userData));
+        if (userData?.restaurantId) {
           const restaurants = await listRestaurants();
-          const found = restaurants.find(r => String(r.id) === String(parsedUser.restaurantId));
+          const found = restaurants.find(r => String(r.id) === String(userData.restaurantId));
           setRestaurant(found || null);
-        } catch {
-          setRestaurant(null);
         }
+      } catch {
+        setUser(null);
+        setRestaurant(null);
+      } finally {
+        setIsReady(true);
       }
     }
-    fetchRestaurant();
-    setIsReady(true);
+    fetchUserAndRestaurant();
   }, [router]);
 
-  if (!isReady) {
-    return null;
-  }
+  if (!isReady) return null;
+
+  // Day labels for x-axis: e.g. SAT SUN MON TUE WED THU FRI
+  const dayLabels = weeklyData.days.map(d =>
+    d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 3)
+  );
 
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-      {/* SIDEBAR - Updated to match your brand */}
+      {/* SIDEBAR */}
       <aside className="w-64 bg-white flex flex-col p-4 border-r border-gray-200">
         <div className="flex items-center gap-2 mb-8 px-2">
           <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
@@ -81,31 +180,32 @@ export default function DashboardPage() {
         </nav>
 
         {/* PROFILE SECTION */}
-{/* PROFILE SECTION */}
-<div className="mt-auto pt-4 border-t border-gray-100">
-<Link href="/profile">
-  <div className="bg-orange-50 p-3 rounded-2xl flex items-center gap-3 border border-orange-100 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer">
-    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-red-400 border-2 border-white flex items-center justify-center text-white font-bold text-xs">
-      {user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'OW'}
-    </div>
-    <div>
-      <p className="font-bold text-sm leading-tight text-gray-800">{user?.name || 'Owner'}</p>
-      <p className="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">Owner</p>
-    </div>
-  </div>
-</Link>
-</div>
+        <div className="mt-auto pt-4 border-t border-gray-100">
+          <Link href="/profile">
+            <div className="bg-orange-50 p-3 rounded-2xl flex items-center gap-3 border border-orange-100 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer">
+              <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-xs overflow-hidden bg-gradient-to-tr from-orange-400 to-red-400">
+                {user?.profileImage ? (
+                  <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                ) : (
+                  user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'OW'
+                )}
+              </div>
+              <div>
+                <p className="font-bold text-sm leading-tight text-gray-800">{user?.name || 'Owner'}</p>
+                <p className="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">Owner</p>
+              </div>
+            </div>
+          </Link>
+        </div>
       </aside>
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-8 overflow-y-auto">
-        
+
         {/* HEADER */}
         <header className="flex justify-between items-center mb-8">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              Welcome back, {restaurant?.name || user?.businessName || user?.cafeName || "Your Cafe"}!
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900">Welcome back to your cafe</h1>
             <p className="text-gray-500 text-sm">Here's what's happening with your hotel/cafe today.</p>
           </div>
           <button
@@ -116,7 +216,7 @@ export default function DashboardPage() {
           </button>
         </header>
 
-        {/* HERO BANNER - Updated with Orange Gradient */}
+        {/* HERO BANNER */}
         <div className="relative h-56 rounded-[2.5rem] overflow-hidden mb-10 bg-gradient-to-r from-orange-500 to-red-500 text-white flex items-center px-12 shadow-2xl shadow-orange-100">
           <div className="z-10 max-w-sm">
             <h2 className="text-3xl font-bold leading-tight mb-3">
@@ -126,14 +226,19 @@ export default function DashboardPage() {
               Manage your menu, receive more orders, and grow your business today.
             </p>
           </div>
-          <div className="absolute right-0 top-0 h-full w-1/2 bg-[url('https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000')] bg-cover bg-center" 
-               style={{ clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)' }} />
+          <div
+            className="absolute right-0 top-0 h-full w-1/2 bg-cover bg-center"
+            style={{
+              backgroundImage: "url('https://images.unsplash.com/photo-1513104890138-7c749659a591?q=80&w=1000')",
+              clipPath: 'polygon(20% 0, 100% 0, 100% 100%, 0% 100%)'
+            }}
+          />
         </div>
 
         {/* STATS CARDS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
-          <StatCard title="Total Orders" value="128" sub="Today" />
-          <StatCard title="Total Revenue" value="Nu. 14,650" sub="earned" />
+          <StatCard title="Total Orders" value={totalOrders} sub="Today" />
+          <StatCard title="Total Revenue" value={`Nu. ${totalRevenue.toLocaleString()}`} sub="earned" />
           <StatCard title="Review Rating" value="4.8" sub="from 240 reviews" isRating />
         </div>
 
@@ -145,9 +250,21 @@ export default function DashboardPage() {
                 <MdOutlineTableBar className="text-orange-500" /> Recent Orders
               </h3>
               <div className="space-y-4">
-                <OrderRow id="#ORD03" status="New" sColor="bg-orange-100 text-orange-600" name="Karma Wangchuk" qty="2 Items" price="Nu. 650" time="10:40 AM" />
-                <OrderRow id="#ORD02" status="Preparing" sColor="bg-blue-100 text-blue-600" name="Kencho Dorji" qty="1 Items" price="Nu. 200" time="09:56 AM" />
-                <OrderRow id="#ORD01" status="On the way" sColor="bg-green-100 text-green-600" name="Dechen Yangzom" qty="4 Items" price="Nu. 950" time="09:20 AM" />
+                {recentOrders.length === 0
+                  ? <div className="text-gray-400 text-sm">No recent orders.</div>
+                  : recentOrders.map(order => (
+                    <OrderRow
+                      key={order.id}
+                      id={order.id}
+                      status={order.status}
+                      sColor={order.status === "Completed" ? "bg-green-100 text-green-600" : order.status === "Preparing" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"}
+                      name={order.customer}
+                      qty={order.items}
+                      price={`Nu. ${order.total}`}
+                      time={order.time}
+                    />
+                  ))
+                }
               </div>
 
               {/* BUSINESS TIP BOX */}
@@ -168,23 +285,16 @@ export default function DashboardPage() {
             </div>
           </div>
 
-          {/* SALES CHART AREA */}
+          {/* SALES CHART */}
           <div className="bg-white p-6 rounded-3xl border border-gray-100 shadow-sm h-fit">
             <div className="flex justify-between items-center mb-6">
               <h3 className="font-bold text-sm">Sales Overview</h3>
-              <select className="text-[10px] border-none bg-gray-50 rounded-lg px-2 py-1 font-bold text-gray-500 outline-none">
-                <option>This Week</option>
-                <option>Last Week</option>
-              </select>
+              <span className="text-[10px] font-bold text-green-600 bg-green-50 px-2 py-1 rounded-lg">Live</span>
             </div>
-            
-            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Revenue Growth</p>
+            <p className="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Revenue (Today)</p>
             <div className="flex items-baseline gap-2 mb-8">
-               <p className="text-3xl font-black">Nu. 24,560</p>
-               <span className="text-green-500 text-xs font-bold bg-green-50 px-2 py-0.5 rounded-md">↑ 8.3%</span>
+              <p className="text-3xl font-black">Nu. {totalRevenue.toLocaleString()}</p>
             </div>
-            
-            {/* SVG Wave Chart */}
             <div className="relative h-32 w-full">
               <svg viewBox="0 0 100 40" className="w-full h-full overflow-visible drop-shadow-lg">
                 <defs>
@@ -193,15 +303,38 @@ export default function DashboardPage() {
                     <stop offset="100%" stopColor="#f97316" stopOpacity="0" />
                   </linearGradient>
                 </defs>
-                <path d="M0,35 C10,30 20,5 30,15 C40,25 50,35 60,25 C70,15 85,20 100,5" 
-                      fill="none" stroke="#f97316" strokeWidth="3" strokeLinecap="round" />
-                <path d="M0,35 C10,30 20,5 30,15 C40,25 50,35 60,25 C70,15 85,20 100,5 L100,40 L0,40 Z" 
-                      fill="url(#gradient)" />
-                <circle cx="30" cy="15" r="3" fill="#f97316" stroke="white" strokeWidth="1" />
+                <polyline
+                  fill="none"
+                  stroke="#f97316"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  points={weeklyData.points}
+                />
+                <polygon
+                  fill="url(#gradient)"
+                  points={`0,40 ${weeklyData.points} 100,40`}
+                />
+                {weeklyData.points.split(' ').map((pt, i) => {
+                  const [cx, cy] = pt.split(',');
+                  return (
+                    <circle
+                      key={i}
+                      cx={cx}
+                      cy={cy}
+                      r={i === 6 ? "3.5" : "2.5"}
+                      fill={i === 6 ? "#f97316" : "white"}
+                      stroke="#f97316"
+                      strokeWidth="1.5"
+                    />
+                  );
+                })}
               </svg>
             </div>
+            {/* X axis: correct days, today highlighted in orange */}
             <div className="flex justify-between mt-6 text-[10px] text-gray-400 font-bold uppercase">
-              <span>Mon</span><span>Wed</span><span>Fri</span><span>Sun</span>
+              {dayLabels.map((label, i) => (
+                <span key={i} className={i === 6 ? "text-orange-500" : ""}>{label}</span>
+              ))}
             </div>
           </div>
         </div>
@@ -218,7 +351,6 @@ function NavItem({ icon, label, active = false, href }) {
       <span className="font-bold text-[13px]">{label}</span>
     </div>
   );
-
   return href ? <Link href={href}>{content}</Link> : content;
 }
 

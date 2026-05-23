@@ -351,7 +351,7 @@ export default function MenuManagementPage() {
           <NavItem
             icon={<FiShoppingBag size={18} />}
             label="Orders"
-            href="/orders"
+            href="/o_orders"
           />
           <NavItem
             icon={<FiUsers size={18} />}

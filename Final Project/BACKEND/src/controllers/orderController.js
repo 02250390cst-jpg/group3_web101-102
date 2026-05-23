@@ -65,6 +65,26 @@ const placeOrder = async (req, res, next) => {
         })),
       });
 
+      // Update DailyRevenue for today
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      await tx.dailyRevenue.upsert({
+        where: {
+          restaurantId_date: {
+            restaurantId: restaurantId,
+            date: today,
+          },
+        },
+        update: {
+          revenue: { increment: totalAmount },
+        },
+        create: {
+          restaurantId: restaurantId,
+          date: today,
+          revenue: totalAmount,
+        },
+      });
+
       return tx.order.findUnique({
         where: { id: createdOrder.id },
         include: {

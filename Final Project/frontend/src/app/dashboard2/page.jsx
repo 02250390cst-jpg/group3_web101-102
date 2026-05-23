@@ -55,6 +55,7 @@ export default function CustomerDashboard() {
           name: restaurant.name,
           rating: 4.8,
           image: "",
+          profileImage: restaurant.profileImage || "",
           alt: restaurant.name,
           cuisine: restaurant.location,
           description: restaurant.description || "Popular nearby hotel",
@@ -247,17 +248,21 @@ export default function CustomerDashboard() {
                   href={`/res_menu?id=${place.id}`}
                   className="group bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all duration-300 border border-amber-100"
                 >
+                  {/* Main image box: show profile image or initials */}
                   <div className="relative h-48 w-full bg-gray-200 flex items-center justify-center">
-                    {place.image ? (
-                      <Image
-                        src={place.image}
-                        alt={place.alt}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    {place.profileImage ? (
+                      <img
+                        src={place.profileImage}
+                        alt={place.name}
+                        className="object-cover w-full h-full"
+                        style={{objectFit: 'cover'}}
                       />
                     ) : (
-                      <div className="text-gray-400 text-sm">Image Placeholder</div>
+                      <div className="w-full h-full flex items-center justify-center bg-orange-100">
+                        <span className="text-orange-500 font-bold text-5xl">
+                          {place.name ? place.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'H'}
+                        </span>
+                      </div>
                     )}
                     <div className="absolute top-3 right-3 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-full text-sm font-bold flex items-center gap-1 shadow">
                       <span className="text-amber-500">★</span> {place.rating}

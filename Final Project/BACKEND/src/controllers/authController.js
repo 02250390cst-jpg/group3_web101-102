@@ -15,7 +15,7 @@ const signToken = (user) => {
 
 const register = async (req, res, next) => {
   try {
-    const { name, email, password, role, businessName, location, description } = req.body;
+    const { name, email, password, phone, role, businessName, location, description } = req.body;
     const normalizedRole = role || 'CUSTOMER';
 
     if (normalizedRole === 'OWNER') {
@@ -42,6 +42,7 @@ const register = async (req, res, next) => {
         name,
         email,
         passwordHash,
+        phone,
         role: normalizedRole,
       },
     });
@@ -66,6 +67,7 @@ const register = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         businessName: restaurant?.name || null,
         location: restaurant?.location || null,
@@ -130,6 +132,7 @@ const login = async (req, res, next) => {
         id: user.id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         businessName: restaurant?.name || null,
         location: restaurant?.location || null,

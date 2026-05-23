@@ -2,13 +2,14 @@ const prisma = require('../config/prisma');
 
 const createRestaurant = async (req, res, next) => {
   try {
-    const { name, location, description } = req.body;
+    const { name, location, description, profileImage } = req.body;
 
     const restaurant = await prisma.restaurant.create({
       data: {
         name,
         location,
         description: description || null,
+        profileImage: profileImage || null,
         ownerId: req.user.id,
       },
     });
@@ -64,7 +65,7 @@ const getRestaurant = async (req, res, next) => {
 const updateRestaurant = async (req, res, next) => {
   try {
     const restaurantId = Number(req.params.id);
-    const { name, location, description } = req.body;
+    const { name, location, description, profileImage } = req.body;
 
     const restaurant = await prisma.restaurant.findFirst({
       where: {
@@ -83,6 +84,7 @@ const updateRestaurant = async (req, res, next) => {
         name: name || restaurant.name,
         location: location || restaurant.location,
         description: description ?? restaurant.description,
+        profileImage: profileImage !== undefined ? profileImage : restaurant.profileImage,
       },
     });
 

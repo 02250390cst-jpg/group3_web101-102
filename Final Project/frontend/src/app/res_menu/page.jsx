@@ -8,6 +8,18 @@ import { FaArrowLeft, FaStar, FaShoppingBasket, FaInfoCircle } from "react-icons
 import { listMenuItems, listRestaurants } from "../../lib/api";
 
 function MenuContent() {
+    // Add item to cart in localStorage
+    const handleAddToCart = (item) => {
+      const cart = JSON.parse(localStorage.getItem("cart")) || [];
+      // If item already in cart, increase quantity
+      const existing = cart.find((i) => i.id === item.id);
+      if (existing) {
+        existing.quantity = (existing.quantity || 1) + 1;
+      } else {
+        cart.push({ ...item, quantity: 1 });
+      }
+      localStorage.setItem("cart", JSON.stringify(cart));
+    };
   const searchParams = useSearchParams();
   const router = useRouter();
   const id = searchParams.get("id");
@@ -17,7 +29,7 @@ function MenuContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       setLoading(true);
       try {
         // Fetch all restaurants and find the one with the matching id
@@ -29,6 +41,8 @@ function MenuContent() {
         if (found) {
           const items = await listMenuItems({ restaurantId: found.id });
           setMenuItems(items);
+          // Store menu in localStorage for recommendations
+          localStorage.setItem("lastMenuItems", JSON.stringify(items));
           // Extract unique categories from menu items
           const uniqueCategories = [...new Set(items.map((item) => item.category || item.description || "Uncategorized"))];
           setCategories(uniqueCategories);
@@ -43,7 +57,7 @@ function MenuContent() {
       } finally {
         setLoading(false);
       }
-    }
+    };
     if (id) fetchData();
   }, [id]);
 
@@ -53,8 +67,17 @@ function MenuContent() {
   return (
     <div className="min-h-screen bg-slate-50 pb-24">
       <div className="relative h-64 w-full">
+        {/* Restaurant profile image as background, fallback to initials */}
+        {restaurant.profileImage ? (
+          <img src={restaurant.profileImage} alt="Profile" className="absolute inset-0 w-full h-full object-cover z-0" />
+        ) : (
+          <div className="absolute inset-0 w-full h-full flex items-center justify-center z-0 bg-orange-100">
+            <span className="text-orange-500 font-bold text-6xl">
+              {restaurant.name ? restaurant.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'H'}
+            </span>
+          </div>
+        )}
         <div className="absolute inset-0 bg-gradient-to-b from-black/60 to-transparent z-10" />
-        {/* FIXED: Check if banner exists before rendering Image */}
         <div className="absolute top-6 left-6 z-20">
           <button onClick={() => router.push('/dashboard2')} className="bg-white p-3 rounded-full shadow-xl hover:scale-110 transition-transform">
             <FaArrowLeft className="text-amber-700" />
@@ -99,7 +122,7 @@ function MenuContent() {
                           {item.isPopular && <span className="text-[10px] font-bold text-orange-500 bg-orange-50 px-2 py-0.5 rounded-full uppercase">Popular</span>}
                         </div>
                         <h3 className="text-lg font-bold text-gray-800 mt-2">{item.name}</h3>
-                        <p className="text-amber-700 font-bold">Nu. {item.price}</p>
+                        <p className="text-amber-700 font-bold">Nu. {Number(item.price) % 1 === 0 ? Number(item.price) : Number(item.price).toFixed(2)}</p>
                         <p className="text-gray-400 text-sm mt-2 line-clamp-2">{item.description}</p>
                       </div>
                       <div className="relative w-24 h-24 sm:w-32 sm:h-32 rounded-2xl overflow-hidden bg-gray-100 flex items-center justify-center">
@@ -109,7 +132,12 @@ function MenuContent() {
                         ) : (
                           <span className="text-gray-300 text-[10px]">No Image</span>
                         )}
-                        <button className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white text-amber-600 px-4 py-1.5 rounded-lg font-bold shadow-lg border border-amber-100 hover:bg-amber-600 hover:text-white transition-all">ADD</button>
+                        <button
+                          className="absolute bottom-2 left-1/2 -translate-x-1/2 bg-white text-amber-600 px-4 py-1.5 rounded-lg font-bold shadow-lg border border-amber-100 hover:bg-amber-600 hover:text-white transition-all"
+                          onClick={() => handleAddToCart(item)}
+                        >
+                          ADD
+                        </button>
                       </div>
                     </div>
                   ))}

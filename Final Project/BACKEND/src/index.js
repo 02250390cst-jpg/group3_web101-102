@@ -3,10 +3,12 @@ const cors = require('cors');
 require('dotenv').config();
 
 const app = express();
+
 const authRoutes = require('./routes/authRoutes');
 const restaurantRoutes = require('./routes/restaurantRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const profileRoutes = require('./routes/profileRoutes');
 
 // Middleware
 app.use(cors());
@@ -24,10 +26,12 @@ app.get('/health', (req, res) => {
 });
 
 // Auth routes
+
 app.use('/api/auth', authRoutes);
 app.use('/api/restaurants', restaurantRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/profile', profileRoutes);
 
 // 404 handler
 app.use((req, res) => {

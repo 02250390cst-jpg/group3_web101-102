@@ -46,6 +46,7 @@ export default function RegisterPage() {
         name: formData.fullName,
         email: formData.email.trim(),
         password: formData.password,
+        phone: formData.phone,
         role: "OWNER",
         businessName: formData.businessName,
         location: formData.location,
@@ -296,7 +297,7 @@ export default function RegisterPage() {
                   className="mt-0.5 w-4 h-4 text-orange-500 rounded border-gray-300 focus:ring-orange-400"
                 />
                 <span className="text-sm text-gray-600">
-                  I agree to the <a href="#" className="text-orange-500 hover:underline">Terms of Service</a> and <a href="#" className="text-orange-500 hover:underline">Privacy Policy</a>
+                  I agree to the <Link href="/terms-register" className="text-orange-500 hover:underline">Terms of Service</Link> and <a href="/privacy-policy-register" className="text-orange-500 hover:underline">Privacy Policy</a>
                 </span>
               </label>
 

@@ -1,20 +1,46 @@
 "use client";
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { FiArrowLeft, FiCamera, FiCheck, FiMail, FiPhone, FiMapPin } from "react-icons/fi";
 
+
+import { apiRequest } from "../../lib/api";
+import { fetchCurrentUser } from "../../lib/user";
+import { useRouter } from "next/navigation";
+
 export default function ProfilePage() {
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@dcafe.com",
-    phone: "+975 17123456",
-    location: "Phuentsholing, Bhutan",
-    description: "Passionate about serving the best organic coffee and homemade pastries in town. D'Cafe has been a local favorite since 2018.",
+    name: "",
+    email: "",
+    phone: "",
+    location: "",
+    description: "",
   });
-
   const [imagePreview, setImagePreview] = useState(null);
+  const [loading, setLoading] = useState(false);
   const fileInputRef = useRef(null);
+  const router = useRouter();
+
+  // Load user info from backend on mount
+  useEffect(() => {
+    const token = localStorage.getItem("vm_token");
+    if (!token) return;
+    fetchCurrentUser(token)
+      .then(user => {
+        setProfile((prev) => ({
+          ...prev,
+          name: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+          location: user.location || "",
+          description: user.description || "",
+        }));
+        if (user.profileImage) setImagePreview(user.profileImage);
+        localStorage.setItem("vm_user", JSON.stringify(user));
+      })
+      .catch(() => {});
+  }, []);
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -27,9 +53,32 @@ export default function ProfilePage() {
     }
   };
 
-  const handleSave = (e) => {
+
+  const handleSave = async (e) => {
     e.preventDefault();
-    alert("Profile updated successfully!");
+    setLoading(true);
+    try {
+      const token = localStorage.getItem("vm_token");
+      const payload = {
+        name: profile.name,
+        email: profile.email,
+        phone: profile.phone,
+        profileImage: imagePreview,
+      };
+      const updated = await apiRequest("/api/profile", {
+        method: "PUT",
+        body: payload,
+        token,
+      });
+      // Update localStorage
+      localStorage.setItem("vm_user", JSON.stringify(updated));
+      alert("Profile updated successfully!");
+      router.push("/dashboard");
+    } catch (err) {
+      alert("Failed to update profile: " + err.message);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -66,7 +115,7 @@ export default function ProfilePage() {
                     />
                   ) : (
                     <div className="w-full h-full rounded-[1.8rem] bg-orange-100 flex items-center justify-center text-orange-500 font-bold text-3xl">
-                      JD
+                      {profile.name ? profile.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'U'}
                     </div>
                   )}
                 </div>
@@ -114,19 +163,7 @@ export default function ProfilePage() {
                 />
               </div>
 
-              {/* DESCRIPTION TEXTAREA */}
-              <div className="space-y-2">
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-widest px-1">
-                  Owner Description
-                </label>
-                <textarea 
-                  rows="4"
-                  className="w-full bg-slate-50 border border-gray-100 rounded-2xl p-4 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-orange-500/20 focus:border-orange-500 transition-all"
-                  value={profile.description}
-                  onChange={(e) => setProfile({...profile, description: e.target.value})}
-                  placeholder="Tell your customers about yourself..."
-                />
-              </div>
+              {/* DESCRIPTION TEXTAREA REMOVED */}
             </form>
           </div>
         </div>
