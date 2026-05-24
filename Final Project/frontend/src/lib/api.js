@@ -1,4 +1,4 @@
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "https://group3web101-102-production.up.railway.app";
 
 const buildUrl = (path) => {
   if (!path) {
