@@ -37,6 +37,7 @@ model Restaurant {
   owner       User       @relation(fields: [ownerId], references: [id])
   menuItems   MenuItem[]
   orders      Order[]
+  dailyRevenues DailyRevenue[]
 
   @@index([name])
   @@index([location])
