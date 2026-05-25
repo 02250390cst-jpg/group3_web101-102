@@ -1,10 +1,15 @@
+
+// Import Prisma client and types
 const { Prisma } = require('@prisma/client');
 const prisma = require('../config/prisma');
 
+
+// Place a new order for a restaurant
 const placeOrder = async (req, res, next) => {
   try {
     const { restaurantId, items } = req.body;
 
+    // Find the restaurant
     const restaurant = await prisma.restaurant.findUnique({
       where: { id: restaurantId },
     });
@@ -13,12 +18,13 @@ const placeOrder = async (req, res, next) => {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
+    // Validate order items
     if (!Array.isArray(items) || items.length === 0) {
       return res.status(422).json({ message: 'Order items are required' });
     }
 
+    // Get menu items and check availability
     const menuItemIds = items.map((item) => item.menuItemId);
-
     const menuItems = await prisma.menuItem.findMany({
       where: {
         id: { in: menuItemIds },
@@ -31,8 +37,10 @@ const placeOrder = async (req, res, next) => {
       return res.status(422).json({ message: 'Some menu items are invalid or unavailable' });
     }
 
+    // Map menu item IDs to their details
     const menuItemMap = new Map(menuItems.map((item) => [item.id, item]));
 
+    // Calculate total amount and build order items data
     let totalAmount = new Prisma.Decimal(0);
     const orderItemsData = items.map((item) => {
       const menuItem = menuItemMap.get(item.menuItemId);
@@ -49,6 +57,7 @@ const placeOrder = async (req, res, next) => {
       };
     });
 
+    // Create order and order items in a transaction
     const order = await prisma.$transaction(async (tx) => {
       const createdOrder = await tx.order.create({
         data: {
@@ -65,7 +74,7 @@ const placeOrder = async (req, res, next) => {
         })),
       });
 
-      // Update DailyRevenue for today
+      // Update or create daily revenue for today
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       await tx.dailyRevenue.upsert({
@@ -85,6 +94,7 @@ const placeOrder = async (req, res, next) => {
         },
       });
 
+      // Return the created order with items
       return tx.order.findUnique({
         where: { id: createdOrder.id },
         include: {
@@ -101,6 +111,8 @@ const placeOrder = async (req, res, next) => {
   }
 };
 
+
+// List all orders placed by the authenticated customer
 const listMyOrders = async (req, res, next) => {
   try {
     const orders = await prisma.order.findMany({
@@ -118,10 +130,13 @@ const listMyOrders = async (req, res, next) => {
   }
 };
 
+
+// List all orders for a restaurant (only if owned by current user)
 const listRestaurantOrders = async (req, res, next) => {
   try {
     const restaurantId = Number(req.params.restaurantId);
 
+    // Check if the restaurant is owned by the user
     const restaurant = await prisma.restaurant.findFirst({
       where: { id: restaurantId, ownerId: req.user.id },
     });
@@ -130,6 +145,7 @@ const listRestaurantOrders = async (req, res, next) => {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
+    // Fetch all orders for the restaurant
     const orders = await prisma.order.findMany({
       where: { restaurantId },
       orderBy: { createdAt: 'desc' },
@@ -145,11 +161,14 @@ const listRestaurantOrders = async (req, res, next) => {
   }
 };
 
+
+// Update the status of an order (only if owned by current user)
 const updateOrderStatus = async (req, res, next) => {
   try {
     const orderId = Number(req.params.orderId);
     const { status } = req.body;
 
+    // Find the order and check ownership
     const order = await prisma.order.findUnique({
       where: { id: orderId },
       include: { restaurant: true },
@@ -159,6 +178,7 @@ const updateOrderStatus = async (req, res, next) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    // Update the order status
     const updated = await prisma.order.update({
       where: { id: orderId },
       data: { status },

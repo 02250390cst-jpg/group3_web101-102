@@ -1,5 +1,8 @@
+
+// Import Prisma client for database access
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+
 
 // Helper: get start and end of a specific date
 function getDayRange(date) {
@@ -9,6 +12,7 @@ function getDayRange(date) {
   end.setHours(23, 59, 59, 999);
   return { start, end };
 }
+
 
 // Helper: get the restaurant that belongs to the logged-in owner
 // JWT gives us user.id (sub), not restaurantId directly
@@ -21,14 +25,14 @@ async function getRestaurantId(userId) {
   return restaurant.id;
 }
 
-// GET /api/dashboard/stats
-// Returns today's total orders + total revenue
-// Naturally resets at midnight because it always queries today 00:00 → 23:59
+
+// Get today's total orders and revenue for the restaurant
 const getTodayStats = async (req, res) => {
   try {
     const restaurantId = await getRestaurantId(req.user.id);
     const { start, end } = getDayRange(new Date());
 
+    // Fetch completed orders for today
     const orders = await prisma.order.findMany({
       where: {
         restaurantId,
@@ -47,23 +51,22 @@ const getTodayStats = async (req, res) => {
   }
 };
 
-// GET /api/dashboard/weekly-revenue
-// Returns last 7 days including today, from 6 days ago → today
-// X axis: day labels e.g. MON, TUE ... SAT
-// Y axis: revenue earned that day
+
+// Get last 7 days of revenue for the restaurant (for weekly chart)
 const getWeeklyRevenue = async (req, res) => {
   try {
     const restaurantId = await getRestaurantId(req.user.id);
     const dayLabels = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
     const result = [];
 
-    // i=6 → 6 days ago, i=0 → today
+    // Loop through last 7 days
     for (let i = 6; i >= 0; i--) {
       const targetDate = new Date();
       targetDate.setDate(targetDate.getDate() - i);
 
       const { start, end } = getDayRange(targetDate);
 
+      // Fetch completed orders for the day
       const orders = await prisma.order.findMany({
         where: {
           restaurantId,
@@ -89,12 +92,13 @@ const getWeeklyRevenue = async (req, res) => {
   }
 };
 
-// GET /api/dashboard/recent-orders
-// Returns latest 10 orders for this restaurant
+
+// Get the latest 10 orders for the restaurant
 const getRecentOrders = async (req, res) => {
   try {
     const restaurantId = await getRestaurantId(req.user.id);
 
+    // Fetch latest 10 orders with customer and item details
     const orders = await prisma.order.findMany({
       where: { restaurantId },
       orderBy: { createdAt: 'desc' },

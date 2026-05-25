@@ -1,10 +1,15 @@
+
+// Import Prisma client for database access
 const prisma = require('../config/prisma');
 
+
+// Create a new menu item for a restaurant
 const createMenuItem = async (req, res, next) => {
   try {
-    const restaurantId = Number(req.params.restaurantId);
+    const restaurantId = Number(req.params.restaurantId); // Get restaurant ID from params
     const { name, description, price, isAvailable, image } = req.body;
 
+    // Find the restaurant owned by the current user
     const restaurant = await prisma.restaurant.findFirst({
       where: { id: restaurantId, ownerId: req.user.id },
     });
@@ -13,6 +18,7 @@ const createMenuItem = async (req, res, next) => {
       return res.status(404).json({ message: 'Restaurant not found' });
     }
 
+    // Create the menu item
     const menuItem = await prisma.menuItem.create({
       data: {
         name,
@@ -30,6 +36,8 @@ const createMenuItem = async (req, res, next) => {
   }
 };
 
+
+// List all menu items for a restaurant, optionally filter by availability
 const listMenuItems = async (req, res, next) => {
   try {
     const restaurantId = Number(req.params.restaurantId);
@@ -40,6 +48,7 @@ const listMenuItems = async (req, res, next) => {
       where.isAvailable = true;
     }
 
+    // Fetch menu items
     const items = await prisma.menuItem.findMany({
       where,
       orderBy: { createdAt: 'desc' },
@@ -51,11 +60,14 @@ const listMenuItems = async (req, res, next) => {
   }
 };
 
+
+// Update a menu item (only if owned by current user)
 const updateMenuItem = async (req, res, next) => {
   try {
     const itemId = Number(req.params.itemId);
     const { name, description, price, isAvailable, image } = req.body;
 
+    // Find the menu item and check ownership
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId },
       include: { restaurant: true },
@@ -65,6 +77,7 @@ const updateMenuItem = async (req, res, next) => {
       return res.status(404).json({ message: 'Menu item not found' });
     }
 
+    // Update the menu item
     const updated = await prisma.menuItem.update({
       where: { id: itemId },
       data: {
@@ -82,10 +95,13 @@ const updateMenuItem = async (req, res, next) => {
   }
 };
 
+
+// Delete a menu item (only if owned by current user)
 const deleteMenuItem = async (req, res, next) => {
   try {
     const itemId = Number(req.params.itemId);
 
+    // Find the menu item and check ownership
     const item = await prisma.menuItem.findUnique({
       where: { id: itemId },
       include: { restaurant: true },
@@ -95,6 +111,7 @@ const deleteMenuItem = async (req, res, next) => {
       return res.status(404).json({ message: 'Menu item not found' });
     }
 
+    // Delete the menu item
     await prisma.menuItem.delete({
       where: { id: itemId },
     });

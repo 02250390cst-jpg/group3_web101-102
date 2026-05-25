@@ -1,18 +1,21 @@
-// Get profile for authenticated user (owner)
+// Get profile for authenticated user (owner or customer)
 const getProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    // Fetch user by ID
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     let restaurant = null;
+    // If owner, fetch their restaurant
     if (user.role === 'OWNER') {
       restaurant = await prisma.restaurant.findFirst({
         where: { ownerId: user.id },
         orderBy: { createdAt: 'desc' },
       });
     }
+    // Return user and restaurant info
     return res.json({
       id: user.id,
       name: user.name,
@@ -30,7 +33,7 @@ const getProfile = async (req, res, next) => {
 };
 const prisma = require('../config/prisma');
 
-// Update profile for authenticated user (owner)
+// Update profile for authenticated user (owner or customer)
 const updateProfile = async (req, res, next) => {
   try {
     const userId = req.user.id;
@@ -42,7 +45,7 @@ const updateProfile = async (req, res, next) => {
       return res.status(404).json({ message: 'User not found' });
     }
 
-    // Update user details (name, email, profileImage)
+    // Update user details (name, email, phone, profileImage)
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -61,6 +64,7 @@ const updateProfile = async (req, res, next) => {
         orderBy: { createdAt: 'desc' },
       });
       if (restaurant && profileImage) {
+        // Update restaurant profile image
         await prisma.restaurant.update({
           where: { id: restaurant.id },
           data: { profileImage },
@@ -70,6 +74,7 @@ const updateProfile = async (req, res, next) => {
       }
     }
 
+    // Return updated user and restaurant info
     return res.json({
       id: updatedUser.id,
       name: updatedUser.name,

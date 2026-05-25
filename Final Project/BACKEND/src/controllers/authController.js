@@ -1,7 +1,11 @@
+
+// Import dependencies and Prisma client
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const prisma = require('../config/prisma');
 
+
+// Helper: sign a JWT token for a user
 const signToken = (user) => {
   const payload = {
     sub: user.id,
@@ -13,17 +17,21 @@ const signToken = (user) => {
   });
 };
 
+
+// Register a new user (customer or owner)
 const register = async (req, res, next) => {
   try {
     const { name, email, password, phone, role, businessName, location, description } = req.body;
     const normalizedRole = role || 'CUSTOMER';
 
+    // Owners must provide business name and location
     if (normalizedRole === 'OWNER') {
       if (!businessName || !location) {
         return res.status(422).json({ message: 'Business name and location are required for owners' });
       }
     }
 
+    // Check if user already exists
     const existingUser = await prisma.user.findFirst({
       where: {
         email,
@@ -35,8 +43,10 @@ const register = async (req, res, next) => {
       return res.status(409).json({ message: 'Email already in use' });
     }
 
+    // Hash the password
     const passwordHash = await bcrypt.hash(password, 10);
 
+    // Create the user
     const user = await prisma.user.create({
       data: {
         name,
@@ -48,6 +58,7 @@ const register = async (req, res, next) => {
     });
 
     let restaurant = null;
+    // If owner, create a restaurant for them
     if (normalizedRole === 'OWNER') {
       restaurant = await prisma.restaurant.create({
         data: {
@@ -59,6 +70,7 @@ const register = async (req, res, next) => {
       });
     }
 
+    // Sign JWT token
     const token = signToken(user);
 
     return res.status(201).json({
@@ -79,11 +91,14 @@ const register = async (req, res, next) => {
   }
 };
 
+
+// Login a user (customer or owner)
 const login = async (req, res, next) => {
   try {
     const { email, password, role } = req.body;
 
     let user = null;
+    // If role is specified, find user by email and role
     if (role) {
       user = await prisma.user.findFirst({
         where: {
@@ -92,6 +107,7 @@ const login = async (req, res, next) => {
         },
       });
     } else {
+      // If no role, find all users with this email
       const users = await prisma.user.findMany({
         where: { email },
         orderBy: { createdAt: 'desc' },
@@ -110,6 +126,7 @@ const login = async (req, res, next) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
 
+    // Compare password hash
     const passwordMatch = await bcrypt.compare(password, user.passwordHash);
 
     if (!passwordMatch) {
@@ -117,6 +134,7 @@ const login = async (req, res, next) => {
     }
 
     let restaurant = null;
+    // If owner, get their restaurant
     if (user.role === 'OWNER') {
       restaurant = await prisma.restaurant.findFirst({
         where: { ownerId: user.id },
@@ -124,6 +142,7 @@ const login = async (req, res, next) => {
       });
     }
 
+    // Sign JWT token
     const token = signToken(user);
 
     return res.json({
