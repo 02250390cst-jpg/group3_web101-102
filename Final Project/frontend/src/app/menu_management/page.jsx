@@ -2,6 +2,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Sidebar from "../components/Sidebar";
 import Link from "next/link";
 import {
   FiLayout,
@@ -26,6 +27,7 @@ import {
 } from "../../lib/api";
 
 export default function MenuManagementPage() {
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // State
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -315,81 +317,43 @@ export default function MenuManagementPage() {
     return href ? <Link href={href}>{content}</Link> : content;
   };
 
+  // Sidebar menu items
+  const sidebarMenuItems = [
+    { name: 'Dashboard', icon: FiLayout, href: '/dashboard' },
+    { name: 'Menu Management', icon: MdOutlineRestaurantMenu, active: true, href: '/menu_management' },
+    { name: 'Orders', icon: FiShoppingBag, href: '/o_orders' },
+    { name: 'Customers', icon: FiUsers, href: '/customers' },
+    { name: 'Reviews', icon: FiStar, href: '/reviews' },
+    { name: 'Setting', icon: FiSettings, href: '/settings' },
+  ];
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 bg-white flex flex-col p-4 border-r border-gray-200">
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="white"
-              strokeWidth="3"
-            >
-              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
-              <path d="M7 2v20M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
-            </svg>
-          </div>
-          <span className="font-bold text-lg tracking-tight">{hotelName}</span>
-        </div>
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="bg-white p-2 rounded-lg shadow-lg border border-amber-200"
+        >
+          <svg className="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
 
-        <nav className="flex-1 space-y-1">
-          <NavItem
-            icon={<FiLayout size={18} />}
-            label="Dashboard"
-            href="/dashboard"
-          />
-          <NavItem
-            icon={<MdOutlineRestaurantMenu size={18} />}
-            label="Menu Management"
-            active
-            href="/menu_management"
-          />
-          <NavItem
-            icon={<FiShoppingBag size={18} />}
-            label="Orders"
-            href="/o_orders"
-          />
-          <NavItem
-            icon={<FiUsers size={18} />}
-            label="Customers"
-            href="/customers"
-          />
-          <NavItem
-            icon={<FiStar size={18} />}
-            label="Reviews"
-            href="/reviews"
-          />
-          <NavItem
-            icon={<FiSettings size={18} />}
-            label="Setting"
-            href="/settings"
-          />
-        </nav>
+      {/* Sidebar overlay for mobile */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-        <div className="mt-auto pt-4 border-t border-gray-100">
-          <div className="bg-orange-50 p-3 rounded-2xl flex items-center gap-3 border border-orange-100">
-            <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-orange-400 to-red-400 flex items-center justify-center text-white font-bold text-xs">
-              {getInitials(userName)}
-            </div>
-            <div>
-              <p className="font-bold text-sm leading-tight text-gray-800">
-                {userName}
-              </p>
-              <p className="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">
-                Owner
-              </p>
-            </div>
-          </div>
-        </div>
-      </aside>
+      <Sidebar menuItems={sidebarMenuItems} userName={userName} mobileMenuOpen={mobileMenuOpen} />
 
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
-        <div className="p-8">
+        <div className="p-4 sm:p-6 md:p-8">
           {/* Header */}
           <div className="flex justify-between items-center mb-4">
             <div>

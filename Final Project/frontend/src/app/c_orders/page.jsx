@@ -32,7 +32,12 @@ export default function CustomerOrders() {
     3: 1,
   });
 
-  const userName = "Khamsum";
+  // Get user name from localStorage
+  const [userName, setUserName] = useState("");
+  React.useEffect(() => {
+    const user = JSON.parse(localStorage.getItem("vm_user"));
+    setUserName(user?.name || "");
+  }, []);
 
   const [cartItems, setCartItems] = useState([]);
   // Get current restaurantId from localStorage (from last menu visit)

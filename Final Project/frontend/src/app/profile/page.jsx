@@ -82,10 +82,10 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-800 p-2 sm:p-4 md:p-8">
+      <div className="max-w-3xl mx-auto w-full">
         {/* HEADER */}
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mb-8">
           <Link href="/dashboard" className="flex items-center gap-2 text-gray-500 hover:text-orange-600 transition-colors">
             <FiArrowLeft />
             <span className="font-bold text-sm">Back to Dashboard</span>
@@ -100,13 +100,13 @@ export default function ProfilePage() {
 
         <div className="bg-white rounded-[2.5rem] shadow-sm border border-gray-100 overflow-hidden">
           {/* COVER PHOTO GRADIENT */}
-          <div className="h-32 bg-gradient-to-r from-orange-500 to-red-500" />
+          <div className="h-24 sm:h-32 bg-gradient-to-r from-orange-500 to-red-500" />
 
-          <div className="px-8 pb-10">
+          <div className="px-4 sm:px-8 pb-8 sm:pb-10">
             {/* AVATAR UPLOAD */}
-            <div className="relative -mt-16 mb-6">
+            <div className="relative -mt-16 mb-6 flex justify-center">
               <div className="relative inline-block">
-                <div className="w-32 h-32 rounded-[2rem] bg-white p-1 shadow-xl">
+                <div className="w-24 h-24 sm:w-32 sm:h-32 rounded-[2rem] bg-white p-1 shadow-xl">
                   {imagePreview ? (
                     <img 
                       src={imagePreview} 
@@ -137,7 +137,7 @@ export default function ProfilePage() {
 
             {/* FORM */}
             <form className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <InputGroup 
                   label="Full Name" 
                   value={profile.name} 

@@ -20,7 +20,7 @@ export default function Home() {
   return (
     <main className="bg-[#dbe7ea] text-gray-800">
       {/* ================= NAVBAR ================= */}
-      <nav className="flex justify-between items-center px-16 py-4 bg-white">
+      <nav className="flex flex-col md:flex-row justify-between items-center px-4 sm:px-8 md:px-16 py-4 bg-white gap-4 md:gap-0">
         <div className="flex items-center gap-2 font-bold">
           <Image src="/logo.jpg" width={40} height={40} alt="logo" />
           VirtualMenu
@@ -45,8 +45,8 @@ export default function Home() {
       </nav>
 
       {/* ================= HERO ================= */}
-      <section className="flex px-16 py-14 items-center gap-10">
-        <div className="w-1/2">
+      <section className="flex flex-col md:flex-row px-4 sm:px-8 md:px-16 py-10 md:py-14 items-center gap-10">
+        <div className="w-full md:w-1/2 mb-8 md:mb-0">
           <p className="text-sm bg-[#cfe0e0] inline-block px-3 py-1 rounded-lg mb-4">
             Choose Your Favourite Food & Get Ready To Serve
           </p>
@@ -84,7 +84,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-1/2 flex justify-center relative">
+        <div className="w-full md:w-1/2 flex justify-center relative">
           {/* Added animate-float class to main image */}
           <div className="animate-float">
             <Image
@@ -142,8 +142,8 @@ export default function Home() {
       </div>
 
       {/* ================= BUSINESS SECTION ================= */}
-      <section className="px-16 py-14 flex gap-10">
-        <div className="w-1/2">
+      <section className="flex flex-col md:flex-row px-4 sm:px-8 md:px-16 py-10 md:py-14 gap-10">
+        <div className="w-full md:w-1/2 mb-8 md:mb-0">
           <h2 className="text-3xl font-bold">Built for</h2>
           <h2 className="text-3xl font-bold text-[#4e7a9a] mb-4">
             Business Owners
@@ -161,8 +161,8 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="w-1/2">
-          <div className="grid grid-cols-3 gap-6">
+        <div className="w-full md:w-1/2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
             <div className="bg-white p-6 rounded-xl flex flex-col gap-2 text-center">
               <FaClipboardList className="text-3xl mx-auto" />
               <p className="text-black font-semibold text-xl">
@@ -197,8 +197,8 @@ export default function Home() {
       </section>
 
       {/* ================= CUSTOMER SECTION ================= */}
-      <section className="px-16 py-14 flex items-center gap-10">
-        <div className="w-1/2 flex justify-center relative">
+      <section className="flex flex-col md:flex-row px-4 sm:px-8 md:px-16 py-10 md:py-14 items-center gap-10">
+        <div className="w-full md:w-1/2 flex justify-center relative mb-8 md:mb-0">
           {/* Added animate-float class to main image */}
           <div className="animate-float">
             <Image
@@ -221,7 +221,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-1/2">
+        <div className="w-full md:w-1/2">
           <p className="text-blue-600 font-semibold">For Customers</p>
 
           <h2 className="text-4xl font-bold mb-4">
@@ -232,7 +232,7 @@ export default function Home() {
             Find the best restaurants and cafe near you, place your order and enjoy your favourite food.
           </p>
 
-          <div className="grid grid-cols-3 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-6">
             <div className="bg-white p-4 rounded-xl flex flex-col gap-2 items-center">
               <FaMapMarkerAlt /> Find Place to  Dine
             </div>
@@ -256,13 +256,13 @@ export default function Home() {
       </section>
 
       {/* ================= HOW IT WORKS ================= */}
-      <section className="px-16 py-14 text-center">
+      <section className="px-4 sm:px-8 md:px-16 py-10 md:py-14 text-center">
         <h1 className="text-4xl font-bold mb-4 text-blue-600">How It Works</h1>
         <h2 className="text-3xl font-bold mb-10 text-left">
           For Business Owners
         </h2>
 
-        <div className="grid grid-cols-4 gap-6 relative mb-16">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 relative mb-16">
           {[
             {
               name: "Register",
@@ -299,7 +299,7 @@ export default function Home() {
         </div>
         <h2 className="text-3xl font-bold mb-10 text-left">For Customers</h2>
 
-        <div className="grid grid-cols-4 gap-6 relative">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 relative">
           {[
             {
               name: "Search Food",
@@ -337,8 +337,8 @@ export default function Home() {
       </section>
 
       {/* ================= CTA ================= */}
-      <section className="px-16 py-14">
-        <div className="bg-gradient-to-r from-blue-200 to-blue-300 p-10 rounded-3xl flex justify-between items-center">
+      <section className="px-4 sm:px-8 md:px-16 py-10 md:py-14">
+        <div className="bg-gradient-to-r from-blue-200 to-blue-300 p-6 md:p-10 rounded-3xl flex flex-col md:flex-row justify-between items-center gap-8">
           <div>
             <h2 className="text-3xl font-bold mb-3">Ready to Grow With Us?</h2>
             <p className="text-gray-700 mb-4">
@@ -373,7 +373,7 @@ export default function Home() {
       </section>
 
       {/* ================= FOOTER ================= */}
-      <footer className="bg-[#a9c6cf] px-16 py-10 grid grid-cols-4 gap-6 text-sm">
+      <footer className="bg-[#a9c6cf] px-4 sm:px-8 md:px-16 py-8 md:py-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-6 text-sm">
         <div>
           <h3 className="font-bold mb-2">VirtualMenu</h3>
           <p>Helping restaurants connect with customers easily.</p>

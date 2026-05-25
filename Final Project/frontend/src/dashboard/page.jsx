@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import Sidebar from '../app/components/Sidebar';
 import { useRouter } from 'next/navigation';
 import { 
   FiLayout, FiShoppingBag, FiUsers, FiStar, 
@@ -20,6 +21,7 @@ export default function DashboardPage() {
   const [totalOrders, setTotalOrders] = useState(0);
   const [recentOrders, setRecentOrders] = useState([]);
   const [weeklyData, setWeeklyData] = useState({ days: [], dailyRevenue: [], points: '', weekTotal: 0 });
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // ── Single function that updates ALL state from localStorage ────────────────
   const updateAll = useCallback(() => {
@@ -156,48 +158,39 @@ export default function DashboardPage() {
     d.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase().slice(0, 3)
   );
 
+  // Sidebar menu items
+  const menuItems = [
+    { name: 'Dashboard', icon: FiLayout, active: true, href: '/dashboard' },
+    { name: 'Menu Management', icon: MdOutlineRestaurantMenu, href: '/menu_management' },
+    { name: 'Orders', icon: FiShoppingBag, href: '/o_orders' },
+    { name: 'Customers', icon: FiUsers },
+    { name: 'Reviews', icon: FiStar },
+    { name: 'Setting', icon: FiSettings },
+  ];
+
   return (
     <div className="flex h-screen bg-slate-50 font-sans text-slate-800 overflow-hidden">
-      {/* SIDEBAR */}
-      <aside className="w-64 bg-white flex flex-col p-4 border-r border-gray-200">
-        <div className="flex items-center gap-2 mb-8 px-2">
-          <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3">
-              <path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 002-2V2" />
-              <path d="M7 2v20M21 15V2a5 5 0 00-5 5v6c0 1.1.9 2 2 2h3zm0 0v7" />
-            </svg>
-          </div>
-          <span className="font-bold text-lg tracking-tight">{restaurant?.name || user?.businessName || user?.cafeName || 'Your Cafe'}</span>
-        </div>
+      {/* Mobile menu button */}
+      <div className="lg:hidden fixed top-4 left-4 z-50">
+        <button
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          className="bg-white p-2 rounded-lg shadow-lg border border-amber-200"
+        >
+          <svg className="w-6 h-6 text-amber-700" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+        </button>
+      </div>
 
-        <nav className="flex-1 space-y-1">
-          <NavItem icon={<FiLayout size={18}/>} label="Dashboard" active />
-          <NavItem icon={<MdOutlineRestaurantMenu size={18}/>} label="Menu Management" href="/menu_management" />
-          <NavItem icon={<FiShoppingBag size={18}/>} label="Orders" href="/o_orders" />
-          <NavItem icon={<FiUsers size={18}/>} label="Customers" />
-          <NavItem icon={<FiStar size={18}/>} label="Reviews" />
-          <NavItem icon={<FiSettings size={18}/>} label="Setting" />
-        </nav>
+      {/* Sidebar overlay for mobile */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
 
-        {/* PROFILE SECTION */}
-        <div className="mt-auto pt-4 border-t border-gray-100">
-          <Link href="/profile">
-            <div className="bg-orange-50 p-3 rounded-2xl flex items-center gap-3 border border-orange-100 hover:border-orange-300 hover:shadow-md transition-all cursor-pointer">
-              <div className="w-10 h-10 rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-xs overflow-hidden bg-gradient-to-tr from-orange-400 to-red-400">
-                {user?.profileImage ? (
-                  <img src={user.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                ) : (
-                  user?.name ? user.name.split(' ').map(n => n[0]).join('').slice(0,2).toUpperCase() : 'OW'
-                )}
-              </div>
-              <div>
-                <p className="font-bold text-sm leading-tight text-gray-800">{user?.name || 'Owner'}</p>
-                <p className="text-[10px] text-orange-600 font-semibold uppercase tracking-wider">Owner</p>
-              </div>
-            </div>
-          </Link>
-        </div>
-      </aside>
+      <Sidebar menuItems={menuItems} userName={user?.name || 'Owner'} mobileMenuOpen={mobileMenuOpen} />
 
       {/* MAIN CONTENT */}
       <main className="flex-1 p-8 overflow-y-auto">
