@@ -365,39 +365,42 @@ export default function CustomerOrders() {
 
                 <button
                   className="w-full mt-5 bg-gradient-to-r from-amber-600 to-orange-500 text-white py-3 rounded-xl font-bold text-base shadow-md hover:bg-gradient-to-r hover:from-amber-700 hover:to-orange-600 transition-all"
-                  onClick={() => {
+                  onClick={async () => {
                     if (cartItems.length === 0) return;
-                    // Get existing orders or empty array
-                    const orders = JSON.parse(localStorage.getItem("orders")) || [];
-                    // Get username and restaurantId from localStorage
-                    let username = "You";
                     let restId = restaurantId;
                     try {
                       const user = JSON.parse(localStorage.getItem("vm_user"));
-                      if (user && user.name) username = user.name;
                       if (user && user.restaurantId) restId = user.restaurantId;
                     } catch {}
-                    // If no restaurantId, try to get from first cart item
                     if (!restId && cartItems.length > 0 && cartItems[0].restaurantId) {
                       restId = cartItems[0].restaurantId;
                     }
-                    const newOrder = {
-  id: `#ORD${String(orders.length + 1).padStart(2, "0")}`,
-  customer: username,
-  items: cartItems.map(i => `${i.quantity || 1}x ${i.name}`).join(", "),
-  total: cartItems.reduce((sum, i) => sum + (i.price * (i.quantity || 1)), 0),
-  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-  date: new Date().toISOString().slice(0, 10),
-  status: "New",
-  type: "Delivery",
-  restaurantId: restId
-};
-                    // Save new order
-                    localStorage.setItem("orders", JSON.stringify([newOrder, ...orders]));
-                    // Clear cart
-                    setCartItems([]);
-                    localStorage.setItem("cart", JSON.stringify([]));
-                    alert("Order placed!");
+                    // Prepare order payload for backend
+                    const payload = {
+                      restaurantId: restId,
+                      items: cartItems.map(i => ({
+                        menuItemId: i.id,
+                        quantity: i.quantity || 1
+                      })),
+                      type: "Delivery"
+                    };
+                    try {
+                      const res = await fetch("/api/orders", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        credentials: "include",
+                        body: JSON.stringify(payload)
+                      });
+                      if (res.ok) {
+                        setCartItems([]);
+                        localStorage.setItem("cart", JSON.stringify([]));
+                        alert("Order placed!");
+                      } else {
+                        alert("Failed to place order. Please try again.");
+                      }
+                    } catch {
+                      alert("Failed to place order. Please try again.");
+                    }
                   }}
                 >
                   Place Order
