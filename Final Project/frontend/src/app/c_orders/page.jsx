@@ -1,6 +1,6 @@
 // app/c_orders/page.jsx
 "use client";
- 
+
 import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -21,8 +21,7 @@ import {
   FaSearch,
   FaArrowRight,
 } from "react-icons/fa";
-import { apiRequest } from "../../lib/api";
- 
+
 export default function CustomerOrders() {
     const router = require("next/navigation").useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -32,30 +31,23 @@ export default function CustomerOrders() {
     2: 1,
     3: 1,
   });
- 
-  // Get user name from localStorage
-  const [userName, setUserName] = useState("");
+
+  const userName = "Khamsum";
+
+  const [cartItems, setCartItems] = useState([]);
+  // Get current restaurantId from localStorage (from last menu visit)
+  const [restaurantId, setRestaurantId] = useState(null);
   React.useEffect(() => {
     const user = JSON.parse(localStorage.getItem("vm_user"));
-    setUserName(user?.name || "");
+    setRestaurantId(user?.restaurantId ?? null);
   }, []);
- 
-  const [cartItems, setCartItems] = useState([]);
- 
-  // FIX: restaurantId comes from the cart items (set by res_menu/page.jsx),
-  // NOT from vm_user (customers don't have a restaurantId).
-  const [restaurantId, setRestaurantId] = useState(null);
- 
+
   // Load cart from localStorage on mount
   React.useEffect(() => {
     const cart = JSON.parse(localStorage.getItem("cart")) || [];
     setCartItems(cart);
-    // FIX: derive restaurantId from the first cart item
-    if (cart.length > 0 && cart[0].restaurantId) {
-      setRestaurantId(cart[0].restaurantId);
-    }
   }, []);
- 
+
   // Get random recommendations from last restaurant menu
   const [recommendedItems, setRecommendedItems] = useState([]);
   React.useEffect(() => {
@@ -65,7 +57,7 @@ export default function CustomerOrders() {
     const shuffled = notInCart.sort(() => 0.5 - Math.random());
     setRecommendedItems(shuffled.slice(0, 2));
   }, [cartItems]);
- 
+
   const menuItems = [
     { name: "Home", icon: FaHome, active: false, href: "/dashboard2" },
     { name: "Orders", icon: FaBox, active: true, href: "/c_orders" },
@@ -75,7 +67,7 @@ export default function CustomerOrders() {
     { name: "Help & Support", icon: FaHeadset, active: false, href: "/support" },
     { name: "Setting", icon: FaCog, active: false, href: "/settings" },
   ];
- 
+
   const updateQuantity = (id, newQuantity) => {
     if (newQuantity < 1) {
       setCartItems(cartItems.filter((item) => item.id !== id));
@@ -83,21 +75,21 @@ export default function CustomerOrders() {
       setQuantity({ ...quantity, [id]: newQuantity });
     }
   };
- 
+
   const removeItem = (id) => {
     const updatedCart = cartItems.filter((item) => item.id !== id);
     setCartItems(updatedCart);
     localStorage.setItem("cart", JSON.stringify(updatedCart));
   };
- 
+
   const itemTotal = cartItems.reduce((total, item) => {
     return total + item.price * (quantity[item.id] || 1);
   }, 0);
- 
+
   const deliveryFee = 100;
   const platformFee = 50;
   const totalAmount = itemTotal + deliveryFee + platformFee;
- 
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-amber-50 to-white">
       {/* Mobile Menu Button */}
@@ -111,14 +103,14 @@ export default function CustomerOrders() {
           </svg>
         </button>
       </div>
- 
+
       {mobileMenuOpen && (
         <div
           className="lg:hidden fixed inset-0 bg-black/50 z-40"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
- 
+
       <div className="flex flex-col lg:flex-row">
         {/* Sidebar - matching dashboard size */}
         <aside
@@ -142,7 +134,7 @@ export default function CustomerOrders() {
                 <p className="text-xs text-gray-400">delivery</p>
               </div>
             </div>
- 
+
             <nav className="space-y-2">
               {menuItems.map((item) => {
                 const Icon = item.icon;
@@ -165,7 +157,7 @@ export default function CustomerOrders() {
                 );
               })}
             </nav>
- 
+
             <div className="pt-6 border-t border-amber-100">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-amber-400 to-orange-400 flex items-center justify-center text-white font-bold">
@@ -179,7 +171,7 @@ export default function CustomerOrders() {
             </div>
           </div>
         </aside>
- 
+
         {/* Main Content - matching dashboard padding */}
         <main className="flex-1 p-6 lg:p-8 overflow-y-auto">
           {/* Search Header */}
@@ -195,7 +187,7 @@ export default function CustomerOrders() {
               />
             </div>
           </div>
- 
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column */}
             <div className="lg:col-span-2 space-y-6">
@@ -207,12 +199,12 @@ export default function CustomerOrders() {
                 </div>
                 <div className="absolute -right-8 -top-8 w-32 h-32 bg-amber-200/30 rounded-full blur-2xl"></div>
               </div>
- 
+
               <div>
                 <h2 className="text-2xl font-bold text-gray-800">Your Order</h2>
                 <p className="text-amber-600 text-sm font-medium mt-1">Review your order and proceed to checkout</p>
               </div>
- 
+
               {/* Cart Items */}
               <div className="space-y-4">
                 {cartItems.map((item) => (
@@ -279,7 +271,7 @@ export default function CustomerOrders() {
                   </div>
                 ))}
               </div>
- 
+
               {/* Add More Items */}
               <button
                 className="w-full py-3 rounded-xl border-2 border-dashed border-amber-300 text-amber-600 font-semibold text-base hover:bg-amber-50 transition-colors"
@@ -287,7 +279,7 @@ export default function CustomerOrders() {
               >
                 + Add more items
               </button>
- 
+
               {/* You May Also Like */}
               <div>
                 <h3 className="text-xl font-bold text-gray-800 mb-4">You may also like</h3>
@@ -323,7 +315,7 @@ export default function CustomerOrders() {
                 </div>
               </div>
             </div>
- 
+
             {/* Right Column - Order Summary */}
             <div className="space-y-6">
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-amber-100 sticky top-6">
@@ -348,7 +340,7 @@ export default function CustomerOrders() {
                   <span className="font-bold text-gray-800 text-lg">Total Amount</span>
                   <span className="font-bold text-amber-700 text-2xl">Nu. {totalAmount}</span>
                 </div>
- 
+
                 <div className="mt-4">
                   <h4 className="font-semibold text-gray-800 text-base mb-2">Delivery Information</h4>
                   <div className="bg-gray-50 rounded-xl p-3">
@@ -359,68 +351,53 @@ export default function CustomerOrders() {
                     </button>
                   </div>
                 </div>
- 
+
                 <div className="mt-4 flex items-center gap-2 text-green-600 bg-green-50 rounded-xl p-3">
                   <FaClock size={14} />
                   <span className="text-sm font-semibold">Ready in 20-30min</span>
                 </div>
- 
-                {/* FIX: Place Order now calls the real backend API instead of localStorage.
-                    This ensures the order is stored in the database and visible to the
-                    business owner on any device in real time. */}
+
+
                 <button
                   className="w-full mt-5 bg-gradient-to-r from-amber-600 to-orange-500 text-white py-3 rounded-xl font-bold text-base shadow-md hover:bg-gradient-to-r hover:from-amber-700 hover:to-orange-600 transition-all"
-                  onClick={async () => {
+                  onClick={() => {
                     if (cartItems.length === 0) return;
- 
-                    // Get the restaurantId from cart items (set by res_menu/page.jsx)
-                    const restId = restaurantId || (cartItems[0]?.restaurantId ?? null);
-                    if (!restId) {
-                      alert("Could not determine restaurant. Please go back and add items from a restaurant.");
-                      return;
-                    }
- 
-                    // Get the customer's auth token
-                    let token = null;
+                    // Get existing orders or empty array
+                    const orders = JSON.parse(localStorage.getItem("orders")) || [];
+                    // Get username and restaurantId from localStorage
+                    let username = "You";
+                    let restId = restaurantId;
                     try {
                       const user = JSON.parse(localStorage.getItem("vm_user"));
-                      token = user?.token ?? null;
+                      if (user && user.name) username = user.name;
+                      if (user && user.restaurantId) restId = user.restaurantId;
                     } catch {}
- 
-                    if (!token) {
-                      alert("You must be logged in to place an order.");
-                      router.push("/signin");
-                      return;
+                    // If no restaurantId, try to get from first cart item
+                    if (!restId && cartItems.length > 0 && cartItems[0].restaurantId) {
+                      restId = cartItems[0].restaurantId;
                     }
- 
-                    // Build the order payload expected by POST /api/orders
-                    const orderPayload = {
-                      restaurantId: Number(restId),
-                      items: cartItems.map((item) => ({
-                        menuItemId: Number(item.id),
-                        quantity: quantity[item.id] || item.quantity || 1,
-                      })),
-                    };
- 
-                    try {
-                      await apiRequest("/api/orders", {
-                        method: "POST",
-                        token,
-                        body: orderPayload,
-                      });
- 
-                      // Clear cart after successful order
-                      setCartItems([]);
-                      localStorage.setItem("cart", JSON.stringify([]));
-                      alert("Order placed! The restaurant will receive it shortly.");
-                    } catch (err) {
-                      alert("Failed to place order: " + err.message);
-                    }
+                    const newOrder = {
+  id: `#ORD${String(orders.length + 1).padStart(2, "0")}`,
+  customer: username,
+  items: cartItems.map(i => `${i.quantity || 1}x ${i.name}`).join(", "),
+  total: cartItems.reduce((sum, i) => sum + (i.price * (i.quantity || 1)), 0),
+  time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+  date: new Date().toISOString().slice(0, 10),
+  status: "New",
+  type: "Delivery",
+  restaurantId: restId
+};
+                    // Save new order
+                    localStorage.setItem("orders", JSON.stringify([newOrder, ...orders]));
+                    // Clear cart
+                    setCartItems([]);
+                    localStorage.setItem("cart", JSON.stringify([]));
+                    alert("Order placed!");
                   }}
                 >
                   Place Order
                 </button>
- 
+
                 <p className="text-xs text-gray-400 text-center mt-4">
                   By placing this order, you agree to our{" "}
                   <Link href="/terms" className="text-amber-600">Terms</Link> &{" "}
@@ -429,7 +406,7 @@ export default function CustomerOrders() {
               </div>
             </div>
           </div>
- 
+
           {/* Footer - matching dashboard */}
           <div className="mt-12 text-center text-gray-400 text-sm border-t border-amber-100 pt-6">
             <p>© 2025 GoodFood — Delivering happiness, one meal at a time.</p>
