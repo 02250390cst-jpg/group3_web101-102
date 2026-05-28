@@ -1,39 +1,28 @@
-name: Deploy to Render
- 
+name: Deploy to Render and Railway
 on:
   push:
     branches:
-      - main          # trigger on every push to main
- 
+      - main
 jobs:
-  # Deploy Backend
   deploy-backend:
-    name: Deploy Backend
+    name: Deploy Backend to Railway
     runs-on: ubuntu-latest
- 
-    steps:
-      - name: Trigger Render deploy (Backend)
+    steps: 
+      - name: Trigger Railway deploy (Backend)
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            --fail \
-            -X POST \
-            -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_BACKEND_SERVICE_ID }}/deploys" \
+          curl --fail -X POST \
+            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache": false}'
- 
-  # Deploy Frontend 
+            "https://backboard.railway.app/graphql/v2" \
+            -d '{"query":"mutation { serviceInstanceRedeploy(serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\") }"}'
   deploy-frontend:
-    name: Deploy Frontend
+    name: Deploy Frontend to Render
     runs-on: ubuntu-latest
- 
     steps:
       - name: Trigger Render deploy (Frontend)
         run: |
-          curl -s -o /dev/null -w "%{http_code}" \
-            --fail \
-            -X POST \
+          curl --fail -X POST \
             -H "Authorization: Bearer ${{ secrets.RENDER_API_KEY }}" \
-            "https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys" \
             -H "Content-Type: application/json" \
-            -d '{"clearCache": false}'
+            -d '{}' \
+            "https://api.render.com/v1/services/${{ secrets.RENDER_FRONTEND_SERVICE_ID }}/deploys"
