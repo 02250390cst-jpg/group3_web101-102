@@ -10,11 +10,12 @@ jobs:
     steps: 
       - name: Trigger Railway deploy (Backend)
         run: |
-          curl --fail -X POST \
-            -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
-            -H "Content-Type: application/json" \
-            "https://backboard.railway.app/graphql/v2" \
-            -d '{"query":"mutation { serviceInstanceRedeploy(serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\", environmentId: \"${{ secrets.RAILWAY_ENVIRONMENT_ID }}\") }"}'
+        RESPONSE=$(curl -s -X POST \
+          -H "Authorization: Bearer ${{ secrets.RAILWAY_TOKEN }}" \
+          -H "Content-Type: application/json" \
+          "https://backboard.railway.app/graphql/v2" \
+          -d '{"query":"mutation { serviceInstanceRedeploy(serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\", environmentId: \"${{ secrets.RAILWAY_ENVIRONMENT_ID }}\") }"}')
+        echo "Railway response: $RESPONSE"
   deploy-frontend:
     name: Deploy Frontend to Render
     runs-on: ubuntu-latest
