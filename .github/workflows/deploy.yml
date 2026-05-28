@@ -6,7 +6,6 @@ on:
       - main
 
 jobs:
-  # ── Deploy Backend (Railway) ─────────────────────────────────────
   deploy-backend:
     name: Deploy Backend to Railway
     runs-on: ubuntu-latest
@@ -17,9 +16,8 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.RAILWAY_API_KEY }}" \
             -H "Content-Type: application/json" \
             "https://backboard.railway.app/graphql/v2" \
-            -d "{\"query\": \"mutation { deploymentTrigger(input: { serviceId: \\\"${{ secrets.RAILWAY_SERVICE_ID }}\\\" }) { id } }\"}"
+            -d '{"query":"mutation { deploymentTrigger(input: { serviceId: \"${{ secrets.RAILWAY_SERVICE_ID }}\" }) { id } }"}'
 
-  # ── Deploy Frontend (Render) ─────────────────────────────────────
   deploy-frontend:
     name: Deploy Frontend to Render
     runs-on: ubuntu-latest
